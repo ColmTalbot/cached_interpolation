@@ -57,3 +57,13 @@ evaluation_points = cp.asarray(evaluation_points)
 interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, backend=cp)
 interpolated_values = interpolant(evaluation_points)
 ```
+
+### Installation
+
+Currently this is only installable by downloading the source and installing locally.
+
+```console
+$ git clone git@github.com:ColmTalbot/cached_interpolation.git
+$ cd cached_interpolation
+$ pip install .
+```
