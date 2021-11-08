@@ -4,7 +4,7 @@ cimport numpy as np  # noqa
 import numpy as np
 
 
-cpdef build_linear_spline(xx, yy):
+cpdef build_linear_interpolant(xx, yy):
     aa = yy[:len(xx) - 1]
     bb = np.diff(yy) / np.diff(xx)
     return aa, bb
