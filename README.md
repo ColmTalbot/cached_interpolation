@@ -44,3 +44,16 @@ There are two ways to do this:
 new_evaluation_points = np.random.uniform(0, 1, 10000)
 interpolant(x=new_evaluation_points, use_cache=False)
 ```
+
+If you have access to an `nvidia` GPU and are evaluating the spline at ~ O(10^5) or more points you may want to switch
+to the `cupy` backend.
+This uses `cupy` just for the evaluation stage, not for computing the interpolation coefficients.
+
+```python
+import cupy as cp
+
+evaluation_points = cp.asarray(evaluation_points)
+
+interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, backend=cp)
+interpolated_values = interpolant(evaluation_points)
+```

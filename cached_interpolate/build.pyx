@@ -15,14 +15,14 @@ cpdef build_natural_cubic_spline(xx, yy):
     cdef int n_points = len(xx) - 1
     cdef double ll, _c
 
-    aa = yy.copy()
+    aa = yy.copy()[:n_points]
     bb = np.empty(n_points)
     cc = np.empty(n_points)
     dd = np.empty(n_points)
 
     delta = np.diff(xx)
 
-    alpha = 3 * np.diff(np.diff(aa) / delta)
+    alpha = 3 * np.diff(np.diff(yy) / delta)
 
     mu = np.empty(n_points + 1)
     zz = np.empty(n_points)

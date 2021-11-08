@@ -51,6 +51,18 @@ class CachingInterpolant:
     interpolant(x=new_evaluation_points, use_cache=False)
     ```
 
+    If you have access to an `nvidia` GPU and are evaluating the spline at ~ O(10^5) or more points you may want
+    to switch to the `cupy` backend.
+    This uses `cupy` just for the evaluation stage, not for computing the interpolation coefficients.
+
+    ```python
+    import cupy as cp
+
+    evaluation_points = cp.asarray(evaluation_points)
+
+    interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, backend=cp)
+    interpolated_values = interpolant(evaluation_points)
+    ```
     """
 
     def __init__(self, x, y, kind="cubic", backend=np):
@@ -68,6 +80,7 @@ class CachingInterpolant:
             Backend for array operations, e.g., `numpy` or `cupy`.
             This enables simple GPU acceleration.
         """
+        self.bk = backend
         allowed_kinds = ["nearest", "linear", "cubic"]
         if kind not in allowed_kinds:
             raise ValueError(f"kind must be in {allowed_kinds}")
@@ -75,7 +88,6 @@ class CachingInterpolant:
         self.y_array = y
         self._data = None
         self.kind = kind
-        self.bk = backend
         self._cached = False
 
     @property
@@ -85,7 +97,10 @@ class CachingInterpolant:
     @kind.setter
     def kind(self, kind):
         self._kind = kind
-        self._data = self.build()
+        data = self.build()
+        if data is not None:
+            data = self.bk.asarray(list(data))
+        self._data = data
 
     def build(self):
         """
@@ -98,6 +113,8 @@ class CachingInterpolant:
             return build_natural_cubic_spline(xx=self.x_array, yy=self.y_array)
         elif self.kind == "linear":
             return build_linear_interpolant(xx=self.x_array, yy=self.y_array)
+        elif self.kind == "nearest":
+            return self.y_array
 
     def _construct_cache(self, x_values):
         """
@@ -110,18 +127,22 @@ class CachingInterpolant:
         :param x_values: np.ndarray
             The values that the interpolant will be evaluated at
         """
+        x_array = self.bk.asarray(self.x_array)
         self._cached = True
         self._idxs = self.bk.empty(x_values.shape, dtype=int)
         if self.kind == "nearest":
             for ii, xval in enumerate(x_values):
-                self._idxs[ii] = np.argmin(abs(xval - self.x_array))
+                self._idxs[ii] = self.bk.argmin(abs(xval - x_array))
         else:
             for ii, xval in enumerate(x_values):
-                self._idxs[ii] = self.bk.where(xval > self.x_array)[0][-1]
-            self._diffs = x_values - self.x_array[self._idxs]
+                self._idxs[ii] = self.bk.where(xval > x_array)[0][-1]
+            diffs = [self.bk.ones(x_values.shape), x_values - x_array[self._idxs]]
             if self.kind == "cubic":
-                self._diffs2 = self._diffs ** 2
-                self._diffs3 = self._diffs ** 3
+                diffs += [
+                    (x_values - x_array[self._idxs]) ** 2,
+                    (x_values - x_array[self._idxs]) ** 3,
+                ]
+            self._diffs = self.bk.asarray(diffs)
 
     def __call__(self, x, y=None, use_cache=True):
         """
@@ -149,15 +170,10 @@ class CachingInterpolant:
             return self._call_nearest()
 
     def _call_nearest(self):
-        return self.y_array[self._idxs]
+        return self._data[self._idxs]
 
     def _call_linear(self):
-        output = self._data[0][self._idxs]
-        output += self._data[1][self._idxs] * self._diffs
-        return output
+        return self.bk.sum(self._data[:, self._idxs] * self._diffs, axis=0)
 
     def _call_cubic(self):
-        output = self._call_linear()
-        output += self._data[2][self._idxs] * self._diffs2
-        output += self._data[3][self._idxs] * self._diffs3
-        return output
+        return self.bk.sum(self._data[:, self._idxs] * self._diffs, axis=0)
