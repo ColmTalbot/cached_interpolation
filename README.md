@@ -1,4 +1,4 @@
-# cached_spline
+# cached_interpolate
 Efficient evaluation of interpolants at fixed points.
 
 Evaluating interpolants typically requires two stages:
