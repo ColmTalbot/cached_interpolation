@@ -1,1 +1,1 @@
-from .spline import CachingSpline
+from .spline import CachingInterpolant

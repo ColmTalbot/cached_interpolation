@@ -73,9 +73,8 @@ class CachingInterpolant:
             raise ValueError(f"kind must be in {allowed_kinds}")
         self.x_array = x
         self.y_array = y
-        self.kind = kind
         self._spline_data = None
-        self.n_points = len(self.x_array) - 1
+        self.kind = kind
         self.bk = backend
         self._cached = False
 
@@ -86,7 +85,7 @@ class CachingInterpolant:
     @kind.setter
     def kind(self, kind):
         self._kind = kind
-        self.build()
+        self._spline_data = self.build()
 
     def build(self):
         """
