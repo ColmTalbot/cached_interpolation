@@ -1,6 +1,6 @@
 import numpy as np
 
-from ._spline import build_linear_spline, build_natural_cubic_spline
+from .build import build_linear_spline, build_natural_cubic_spline
 
 
 class CachingInterpolant:
