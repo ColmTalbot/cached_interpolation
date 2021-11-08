@@ -17,7 +17,7 @@ This package implements this caching for nearest neighbour, linear, and cubic in
 ```python
 import numpy as np
 
-from cached_spline import CachingInterpolant
+from cached_interpolate import CachingInterpolant
 
 x_nodes = np.linspace(0, 1, 10)
 y_nodes = np.random.uniform(-1, 1, 10)

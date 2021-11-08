@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 from scipy.interpolate import interp1d, CubicSpline
 
-from cached_spline import CachingInterpolant
+from cached_interpolate import CachingInterpolant
 
 
 class SplineTest(unittest.TestCase):

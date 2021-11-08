@@ -1,6 +1,6 @@
 import numpy as np
 
-from .build import build_linear_spline, build_natural_cubic_spline
+from .build import build_linear_interpolant, build_natural_cubic_spline
 
 
 class CachingInterpolant:
@@ -23,7 +23,7 @@ class CachingInterpolant:
     ```python
     import numpy as np
 
-    from cached_spline import CachingInterpolant
+    from cached_interpolate import CachingInterpolant
 
     x_nodes = np.linspace(0, 1, 10)
     y_nodes = np.random.uniform(-1, 1, 10)
@@ -73,7 +73,7 @@ class CachingInterpolant:
             raise ValueError(f"kind must be in {allowed_kinds}")
         self.x_array = x
         self.y_array = y
-        self._spline_data = None
+        self._data = None
         self.kind = kind
         self.bk = backend
         self._cached = False
@@ -85,7 +85,7 @@ class CachingInterpolant:
     @kind.setter
     def kind(self, kind):
         self._kind = kind
-        self._spline_data = self.build()
+        self._data = self.build()
 
     def build(self):
         """
@@ -97,7 +97,7 @@ class CachingInterpolant:
         if self.kind == "cubic":
             return build_natural_cubic_spline(xx=self.x_array, yy=self.y_array)
         elif self.kind == "linear":
-            return build_linear_spline(xx=self.x_array, yy=self.y_array)
+            return build_linear_interpolant(xx=self.x_array, yy=self.y_array)
 
     def _construct_cache(self, x_values):
         """
@@ -152,12 +152,12 @@ class CachingInterpolant:
         return self.y_array[self._idxs]
 
     def _call_linear(self):
-        output = self._spline_data[0][self._idxs]
-        output += self._spline_data[1][self._idxs] * self._diffs
+        output = self._data[0][self._idxs]
+        output += self._data[1][self._idxs] * self._diffs
         return output
 
     def _call_cubic(self):
         output = self._call_linear()
-        output += self._spline_data[2][self._idxs] * self._diffs2
-        output += self._spline_data[3][self._idxs] * self._diffs3
+        output += self._data[2][self._idxs] * self._diffs2
+        output += self._data[3][self._idxs] * self._diffs3
         return output
