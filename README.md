@@ -16,8 +16,6 @@ interpolation coefficients to be done at each iteration.
 
 A further advantage of this, is that it allows trivially parallising the interpolation using `cupy`.
 
-I implemented [cached_interpolation](https://github.com/ColmTalbot/cached_interpolation) a simple package that leverages these optimizations.
-
 This package implements this caching for nearest neighbour, linear, and cubic interpolation.
 
 ### Installation
@@ -62,7 +60,7 @@ plt.show()
 plt.close(figure)
 ```
 
-![image](spline_comparison.pdf)
+![comparison](./spline_comparison.pdf)
 
 I note here that we use the "natural" boundary condition.
 This means that first and second derivatives of the spline vanish at the endpoints.
