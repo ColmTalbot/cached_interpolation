@@ -60,7 +60,7 @@ plt.show()
 plt.close(figure)
 ```
 
-![comparison](./spline_comparison.pdf)
+![comparison](./spline_comparison.png)
 
 I note here that we use the "natural" boundary condition.
 This means that first and second derivatives of the spline vanish at the endpoints.
