@@ -12,6 +12,7 @@ jobs:
       max-parallel: 5
 
     steps:
+    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -29,6 +30,7 @@ jobs:
         python -m pip install .
     - name: Run pre-commit checks
       run: |
+        pre-commit install
         pre-commit run --all-files --verbose --show-diff-on-failure
     - name: List installed
       run: |
