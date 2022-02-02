@@ -1,10 +1,13 @@
-from setuptools import Extension, setup
-from Cython.Build import cythonize
-
 import numpy as np
+from Cython.Build import cythonize
+from setuptools import Extension, setup
 
 extensions = [
-    Extension("cached_interpolate.build", ["cached_interpolate/build.pyx"], include_dirs=[np.get_include()]),
+    Extension(
+        "cached_interpolate.build",
+        ["cached_interpolate/build.pyx"],
+        include_dirs=[np.get_include()],
+    ),
 ]
 setup(
     name="cached_interpolate",

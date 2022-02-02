@@ -1,13 +1,12 @@
 import unittest
 
 import numpy as np
-from scipy.interpolate import interp1d, CubicSpline
+from scipy.interpolate import CubicSpline, interp1d
 
 from cached_interpolate import CachingInterpolant
 
 
 class SplineTest(unittest.TestCase):
-
     def setUp(self) -> None:
         self.x_values = np.linspace(0, 1, 10)
         self.y_values = np.random.uniform(-1, 1, 10)
