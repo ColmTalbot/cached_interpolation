@@ -28,7 +28,7 @@ jobs:
         conda install pytest-cov pre-commit scipy
     - name: Install package
       run: |
-        python -m pip install .
+        python setup.py build_ext --inplace
     - name: Run pre-commit checks
       run: |
         pre-commit install
