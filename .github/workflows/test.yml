@@ -25,7 +25,7 @@ jobs:
     - name: Install dependencies
       run: |
         conda install pytest-cov pre-commit
-        conda install cython
+        conda install cython numpy
     - name: Install package
       run: |
         python -m pip install .
