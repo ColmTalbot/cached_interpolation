@@ -24,7 +24,9 @@ jobs:
         conda config --add channels conda-forge
     - name: Install dependencies
       run: |
+        # setup requirements
         conda install cython numpy
+        # testing requirements
         conda install pytest-cov pre-commit scipy
     - name: Install package
       run: |
