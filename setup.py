@@ -2,6 +2,8 @@ import numpy as np
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
+import versioneer
+
 
 class LazyImportBuildExtCmd(build_ext):
     def finalize_options(self):
@@ -22,7 +24,8 @@ setup(
     name="cached_interpolate",
     ext_modules=extensions,
     install_requires=["numpy"],
-    setup_requires=["cython", "numpy"],
-    cmdclass={"build_ext": LazyImportBuildExtCmd},
+    setup_requires=["cython", "numpy", "versioneer"],
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass({"build_ext": LazyImportBuildExtCmd}),
     packages=["cached_interpolate"],
 )
