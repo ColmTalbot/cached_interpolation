@@ -30,7 +30,7 @@ $ pip install .
 
 ### Demonstration
 
-We can compare the interpolation to the `scipy.interpolate.CubicpSpline` implementation.
+We can compare the interpolation to the `scipy.interpolate.CubicSpline` implementation.
 
 ```python
 import numpy as np
@@ -95,7 +95,7 @@ n_iterations = 1000
 start = time.time()
 for _ in range(n_iterations):
     y_nodes = np.random.uniform(-1, 1, 10)
-    interpolant(x=evaluation_points, y=np.random.uniform(-1, 1, 10))
+    interpolant(x=evaluation_points, y=y_nodes)
 stop = time.time()
 print(f"Cached time = {(stop - start):.3f}s for {n_iterations} iterations.")
 
