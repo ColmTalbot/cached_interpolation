@@ -111,15 +111,15 @@ class CachingInterpolant:
         """
         if self.kind == "cubic":
             if self.y_array.dtype == complex:
-                real_ = self.bk.asarray(build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.real))
-                imag_ = self.bk.asarray(build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.imag))
+                real_ = self.bk.stack(build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.real))
+                imag_ = self.bk.stack(build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.imag))
                 return real_ + 1j * imag_
             else:
-                return build_natural_cubic_spline(xx=self.x_array, yy=self.y_array)
+                return self.bk.stack(build_natural_cubic_spline(xx=self.x_array, yy=self.y_array))
         elif self.kind == "linear":
-            return build_linear_interpolant(xx=self.x_array, yy=self.y_array)
+            return self.bk.asarray(build_linear_interpolant(xx=self.x_array, yy=self.y_array))
         elif self.kind == "nearest":
-            return self.y_array
+            return self.bk.asarray(self.y_array)
 
     def _construct_cache(self, x_values):
         """
@@ -170,7 +170,7 @@ class CachingInterpolant:
         """
         if y is not None:
             self.y_array = y
-            self._data = self.bk.asarray(self.build())
+            self._data = self.build()
         if not (self._cached and use_cache):
             self._construct_cache(x_values=x)
         if self.kind == "cubic":
