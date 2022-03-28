@@ -110,7 +110,12 @@ class CachingInterpolant:
             Tuple containing the interpolation coefficients
         """
         if self.kind == "cubic":
-            return build_natural_cubic_spline(xx=self.x_array, yy=self.y_array)
+            if self.y_array.dtype == complex:
+                real_ = self.bk.asarray(build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.real))
+                imag_ = self.bk.asarray(build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.imag))
+                return real_ + 1j * imag_
+            else:
+                return build_natural_cubic_spline(xx=self.x_array, yy=self.y_array)
         elif self.kind == "linear":
             return build_linear_interpolant(xx=self.x_array, yy=self.y_array)
         elif self.kind == "nearest":
@@ -128,6 +133,7 @@ class CachingInterpolant:
             The values that the interpolant will be evaluated at
         """
         x_array = self.bk.asarray(self.x_array)
+        x_values = self.bk.atleast_1d(x_values)
         self._cached = True
         self._idxs = self.bk.empty(x_values.shape, dtype=int)
         if self.kind == "nearest":
@@ -135,14 +141,19 @@ class CachingInterpolant:
                 self._idxs[ii] = self.bk.argmin(abs(xval - x_array))
         else:
             for ii, xval in enumerate(x_values):
-                self._idxs[ii] = self.bk.where(xval > x_array)[0][-1]
+                if xval <= x_array[0]:
+                    self._idxs[ii] = 0
+                else:
+                    self._idxs[ii] = self.bk.where(xval > x_array)[0][-1]
             diffs = [self.bk.ones(x_values.shape), x_values - x_array[self._idxs]]
             if self.kind == "cubic":
                 diffs += [
                     (x_values - x_array[self._idxs]) ** 2,
                     (x_values - x_array[self._idxs]) ** 3,
                 ]
-            self._diffs = self.bk.asarray(diffs)
+                self._diffs = self.bk.stack(diffs)
+            else:
+                self._diffs = diffs
 
     def __call__(self, x, y=None, use_cache=True):
         """
