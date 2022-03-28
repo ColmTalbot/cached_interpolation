@@ -1,3 +1,6 @@
+[![Python Unit Testing using Conda](https://github.com/ColmTalbot/cached_interpolation/actions/workflows/test.yml/badge.svg)](https://github.com/ColmTalbot/cached_interpolation/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/ColmTalbot/cached_interpolation/branch/main/graph/badge.svg?token=6VK8HRADHQ)](https://codecov.io/gh/ColmTalbot/cached_interpolation)
+
 # cached_interpolate
 Efficient evaluation of interpolants at fixed points.
 

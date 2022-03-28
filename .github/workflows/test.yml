@@ -1,0 +1,56 @@
+name: Python Unit Testing using Conda
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+      max-parallel: 5
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Add conda to system path
+      run: |
+        # $CONDA is an environment variable pointing to the root of the miniconda directory
+        echo $CONDA/bin >> $GITHUB_PATH
+        conda config --add channels conda-forge
+    - name: Install dependencies
+      run: |
+        # setup requirements
+        conda install cython numpy
+        # testing requirements
+        conda install pytest-cov pre-commit scipy
+    - name: Install package
+      run: |
+        python setup.py build_ext --inplace
+    - name: Run pre-commit checks
+      run: |
+        pre-commit install
+        pre-commit run --all-files --verbose --show-diff-on-failure
+    - name: List installed
+      run: |
+        python -m pip list
+    - name: Test with pytest
+      run: |
+        pytest --cov cached_interpolate -ra --color yes --cov-report=xml --junitxml=pytest.xml
+    - name: Publish coverage to Codecov
+      uses: codecov/codecov-action@v1.2.1
+      with:
+        files: coverage.xml
+        flags: python${{ matrix.python-version }}
+    - name: Coverage report
+      run: python -m coverage report --show-missing
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: pytest-${{ matrix.python-version }}
+        path: pytest.xml

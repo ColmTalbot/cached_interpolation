@@ -170,7 +170,7 @@ class CachingInterpolant:
         """
         if y is not None:
             self.y_array = y
-            self.build()
+            self._data = self.bk.asarray(self.build())
         if not (self._cached and use_cache):
             self._construct_cache(x_values=x)
         if self.kind == "cubic":
