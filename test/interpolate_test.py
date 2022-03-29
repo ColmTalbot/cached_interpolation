@@ -51,6 +51,11 @@ class SplineTest(unittest.TestCase):
         spl = CachingInterpolant(self.x_values, self.y_values, kind="linear")
         self.assertEqual(spl(0), self.y_values[0])
 
+    def test_single_complex(self):
+        y_values = self.y_values + 1j * (1 - self.y_values)
+        spl = CachingInterpolant(self.x_values, y_values, kind="linear")
+        self.assertEqual(spl(0), y_values[0])
+
     def test_interpolation_at_lower_bound(self):
         spl = CachingInterpolant(self.x_values, self.y_values, kind="linear")
         test_point = 0

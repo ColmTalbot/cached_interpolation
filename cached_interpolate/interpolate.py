@@ -80,6 +80,7 @@ class CachingInterpolant:
             Backend for array operations, e.g., `numpy` or `cupy`.
             This enables simple GPU acceleration.
         """
+        self.return_float = False
         self.bk = backend
         allowed_kinds = ["nearest", "linear", "cubic"]
         if kind not in allowed_kinds:
@@ -142,6 +143,8 @@ class CachingInterpolant:
         """
         x_array = self.bk.asarray(self.x_array)
         x_values = self.bk.atleast_1d(x_values)
+        if x_values.size == 1:
+            self.return_float = True
         self._cached = True
         self._idxs = self.bk.empty(x_values.shape, dtype=int)
         if self.kind == "nearest":
@@ -182,11 +185,14 @@ class CachingInterpolant:
         if not (self._cached and use_cache):
             self._construct_cache(x_values=x)
         if self.kind == "cubic":
-            return self._call_cubic()
+            out = self._call_cubic()
         elif self.kind == "linear":
-            return self._call_linear()
+            out = self._call_linear()
         elif self.kind == "nearest":
-            return self._call_nearest()
+            out = self._call_nearest()
+        if self.return_float:
+            out = out[0]
+        return out
 
     def _call_nearest(self):
         return self._data[self._idxs]
