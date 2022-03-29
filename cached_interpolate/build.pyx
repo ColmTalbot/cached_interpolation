@@ -1,5 +1,3 @@
-#cython: language_level=3, boundscheck=False, wraparound=False, cdivision=True, initializedcheck=False
-
 cimport numpy as np  # noqa
 import numpy as np
 
