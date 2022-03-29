@@ -54,12 +54,12 @@ class SplineTest(unittest.TestCase):
     def test_interpolation_at_lower_bound(self):
         spl = CachingInterpolant(self.x_values, self.y_values, kind="linear")
         test_point = 0
-        self.assertEqual(spl(test_point), self.y_values[0])
+        self.assertAlmostEqual(spl(test_point), self.y_values[0], 5)
 
     def test_interpolation_at_upper_bound(self):
         spl = CachingInterpolant(self.x_values, self.y_values, kind="linear")
         test_point = 1
-        self.assertEqual(spl(test_point), self.y_values[-1])
+        self.assertAlmostEqual(spl(test_point), self.y_values[-1], 5)
 
     def test_bad_interpolation_method_raises_error(self):
         with self.assertRaises(ValueError):
