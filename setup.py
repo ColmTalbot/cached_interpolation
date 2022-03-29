@@ -1,4 +1,4 @@
-import sys
+import os
 
 import numpy as np
 from setuptools import Extension, setup
@@ -17,11 +17,12 @@ class LazyImportBuildExtCmd(build_ext):
             initializedcheck=False,
             embedsignature=True,
         )
-        if "develop" in sys.argv:
+        if os.environ.get("CYTHON_COVERAGE"):
             compiler_directives["linetrace"] = True
             annotate = True
         else:
             annotate = False
+        print(compiler_directives)
         self.distribution.ext_modules = cythonize(
             self.distribution.ext_modules,
             compiler_directives=compiler_directives,
@@ -30,13 +31,14 @@ class LazyImportBuildExtCmd(build_ext):
         super(LazyImportBuildExtCmd, self).finalize_options()
 
 
-if "develop" in sys.argv:
+if os.environ.get("CYTHON_COVERAGE"):
     macros = [
         ("CYTHON_TRACE", "1"),
         ("CYTHON_TRACE_NOGIL", "1"),
     ]
 else:
     macros = list()
+print(macros)
 extensions = [
     Extension(
         "cached_interpolate.build",
