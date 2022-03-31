@@ -1,5 +1,6 @@
 [build-system]
-requires = ["numpy", "cython"]
+requires = ["oldest-supported-numpy", "cython", "setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
 skip = ["cp36-*", "cp37-*", "pp37-*"]
