@@ -21,6 +21,7 @@ jobs:
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
+        conda init bash
         conda info --envs
         conda config --add channels conda-forge
         conda create -n test python=${{ matrix.python-version }}
