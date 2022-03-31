@@ -23,7 +23,7 @@ jobs:
         echo $CONDA/bin >> $GITHUB_PATH
         conda info --envs
         conda config --add channels conda-forge
-        conda create -n test python=3.${{ matrix.python-version }}
+        conda create -n test python=${{ matrix.python-version }}
         conda activate test
     - name: Install dependencies
       run: |
