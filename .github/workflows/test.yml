@@ -24,11 +24,12 @@ jobs:
         conda config --add channels conda-forge
     - name: Install dependencies
       run: |
+        python -m pip install --upgrade pip setuptools
+        conda update -n base -c defaults conda
         # setup requirements
         conda install cython numpy
         # testing requirements
         conda install pytest-cov pre-commit scipy
-        python -m pip install --upgrade pip setuptools
     - name: Install package
       run: |
         export CYTHON_COVERAGE=1

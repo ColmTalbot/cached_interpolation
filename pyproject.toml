@@ -2,4 +2,4 @@
 requires = ["setuptools", "numpy", "cython", "wheel"]
 
 [tool.cibuildwheel]
-skip = ["cp36-*", "cp37-*"]
+skip = ["cp36-*", "cp37-*", "pp37-*"]
