@@ -112,15 +112,15 @@ class CachingInterpolant:
         """
         if self.kind == "cubic":
             if self.y_array.dtype == complex:
-                real_ = self.bk.stack(
+                real_ = self.bk.vstack(
                     build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.real)
                 )
-                imag_ = self.bk.stack(
+                imag_ = self.bk.vstack(
                     build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.imag)
                 )
                 return real_ + 1j * imag_
             else:
-                return self.bk.stack(
+                return self.bk.vstack(
                     build_natural_cubic_spline(xx=self.x_array, yy=self.y_array)
                 )
         elif self.kind == "linear":
