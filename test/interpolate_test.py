@@ -1,21 +1,20 @@
+import pathlib
 import sys
-
-print(sys.path)  # noqa
-_temp = sys.path.pop(0)  # noqa
-# sys.path = sys.path[1:]  # noqa
 
 import numpy as np
 import pytest
 from scipy.interpolate import CubicSpline, interp1d
 
-print(sys.path)
-# sys.path.insert(0, _temp)
-print(sys.path)
-from cached_interpolate import CachingInterpolant
 
-print(sys.path)
-sys.path.insert(0, _temp)
-print(sys.path)
+def import_interpolant():
+    site_packages = str(pathlib.Path(np.__file__).parent.parent)
+    sys.path.insert(0, site_packages)
+    from cached_interpolate import CachingInterpolant
+
+    return CachingInterpolant
+
+
+CachingInterpolant = import_interpolant()
 
 
 def test_cubic_matches_scipy():
