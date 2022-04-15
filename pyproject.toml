@@ -4,5 +4,5 @@ build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
 skip = ["cp36-*", "cp37-*", "pp37-*"]
-test-command = "cd {package}/test && pytest . && cd -"
+test-command = "pytest {package}/test"
 test-requires = ["pytest", "scipy"]

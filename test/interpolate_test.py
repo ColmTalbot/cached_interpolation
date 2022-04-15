@@ -1,3 +1,8 @@
+import sys
+
+print(sys.path)  # noqa
+sys.path = sys.path[1:]  # noqa
+
 import unittest
 
 import numpy as np
