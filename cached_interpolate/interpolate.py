@@ -112,15 +112,15 @@ class CachingInterpolant:
         """
         if self.kind == "cubic":
             if self.y_array.dtype == complex:
-                real_ = self.bk.stack(
+                real_ = self.bk.vstack(
                     build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.real)
                 )
-                imag_ = self.bk.stack(
+                imag_ = self.bk.vstack(
                     build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.imag)
                 )
                 return real_ + 1j * imag_
             else:
-                return self.bk.stack(
+                return self.bk.vstack(
                     build_natural_cubic_spline(xx=self.x_array, yy=self.y_array)
                 )
         elif self.kind == "linear":
@@ -145,17 +145,22 @@ class CachingInterpolant:
         x_values = self.bk.atleast_1d(x_values)
         if x_values.size == 1:
             self.return_float = True
+        input_shape = x_values.shape
+        x_values = x_values.reshape(-1)
         self._cached = True
         self._idxs = self.bk.empty(x_values.shape, dtype=int)
         if self.kind == "nearest":
             for ii, xval in enumerate(x_values):
                 self._idxs[ii] = self.bk.argmin(abs(xval - x_array))
+            self._idxs = self._idxs.reshape(input_shape)
         else:
             for ii, xval in enumerate(x_values):
                 if xval <= x_array[0]:
                     self._idxs[ii] = 0
                 else:
                     self._idxs[ii] = self.bk.where(xval > x_array)[0][-1]
+            self._idxs = self._idxs.reshape(input_shape)
+            x_values = x_values.reshape(input_shape)
             diffs = [self.bk.ones(x_values.shape), x_values - x_array[self._idxs]]
             if self.kind == "cubic":
                 diffs += [
