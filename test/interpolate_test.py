@@ -1,13 +1,21 @@
 import sys
 
 print(sys.path)  # noqa
-sys.path = sys.path[1:]  # noqa
+_temp = sys.path.pop(0)  # noqa
+# sys.path = sys.path[1:]  # noqa
 
 import numpy as np
 import pytest
 from scipy.interpolate import CubicSpline, interp1d
 
+print(sys.path)
+# sys.path.insert(0, _temp)
+print(sys.path)
 from cached_interpolate import CachingInterpolant
+
+print(sys.path)
+sys.path.insert(0, _temp)
+print(sys.path)
 
 
 def test_cubic_matches_scipy():
