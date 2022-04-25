@@ -1,0 +1,62 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Wheels
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ v* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.8", "3.9", "3.10"]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools
+        python -m pip install cython oldest-supported-numpy
+    - name: Build wheel
+      run: python -m pip wheel -v --wheel-dir=wheel --no-deps .
+    - name: Fix wheel (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        python -m pip install auditwheel
+        auditwheel repair wheel/cached_interpolate*.whl
+    - name: Fix wheel (Mac OS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        python -m pip install delocate
+        delocate-wheel -v -w wheelhouse wheel/cached_interpolate*.whl
+    - name: Fix wheel (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        python -m pip install delvewheel
+        delvewheel repair -v --wheel-dir wheelhouse wheel/cached_interpolate*.whl
+    - name: Remove temporary wheels and install
+      run: |
+        rm -rf wheel/build/
+        python -m pip install wheelhouse/*
+    - name: Run import tests
+      run: |
+        python -c "import cached_interpolate"
+        python -c "import cached_interpolate.build"
+    - uses: actions/upload-artifact@v3
+      with:
+        name: wheelhouse
+        path: wheelhouse
+
