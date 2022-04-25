@@ -23,7 +23,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -95,6 +95,8 @@ jobs:
         python -m pip install -v *
     - name: Run import tests
       run: |
+        pwd
+        ls
         python -c "import cached_interpolate"
         python -c "import cached_interpolate.build"
     - uses: actions/upload-artifact@v3
