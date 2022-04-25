@@ -21,6 +21,7 @@ jobs:
 #         python-version: ["3.8", "3.9", "3.10"]
 
     steps:
+      - uses: actions/checkout@v3
       - uses: RalfG/python-wheels-manylinux-build@v0.4.2
         with:
           python-versions: 'cp38-cp38 cp39-cp39 cp310-cp310'
@@ -28,9 +29,8 @@ jobs:
 #           package-path: 'cached_interpolate'
           pip-wheel-args: '-v --wheel-dir=wheel --no-deps'
 
-#     - uses: actions/checkout@v1
 #     - name: Set up Python ${{ matrix.python-version }}
-#       uses: actions/setup-python@v1
+#       uses: actions/setup-python@v3
 #       with:
 #         python-version: ${{ matrix.python-version }}
 #     - name: Install dependencies
@@ -102,6 +102,7 @@ jobs:
         python -m pip install -v *
     - name: Run import tests
       run: |
+        cd ../
         python -c "import cached_interpolate"
         python -c "import cached_interpolate.build"
     - uses: actions/upload-artifact@v3
