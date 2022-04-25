@@ -28,7 +28,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip setuptools
+        python -m pip install --upgrade pip wheel setuptools
         python -m pip install cython oldest-supported-numpy
     - name: Build wheel
       run: python -m pip wheel -v --wheel-dir=wheel --no-deps .
