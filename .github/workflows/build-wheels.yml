@@ -25,7 +25,7 @@ jobs:
         with:
           python-versions: 'cp38-cp38 cp39-cp39 cp310-cp310'
           build-requirements: 'cython numpy'
-          package-path: 'cached_interpolate'
+#           package-path: 'cached_interpolate'
           pip-wheel-args: '-v --wheel-dir=wheel --no-deps'
 
 #     - uses: actions/checkout@v1
@@ -63,12 +63,13 @@ jobs:
 #         path: wheelhouse
 
   build-other:
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
+#     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+#         os: [windows-latest, macos-latest]
         python-version: ["3.8", "3.9", "3.10"]
 
     steps:
@@ -84,18 +85,16 @@ jobs:
     - name: Build wheel
       run: |
         python -m pip wheel -v --wheel-dir=wheel --no-deps .
-        ls
-        ls wheel
     - name: Fix wheel (Mac OS)
-      if: matrix.os == 'macos-latest'
+#       if: matrix.os == 'macos-latest'
       run: |
         python -m pip install delocate
         delocate-wheel -v -w wheelhouse wheel/cached_interpolate*.whl
-    - name: Fix wheel (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        python -m pip install delvewheel
-        for %w in (wheel\*.whl) do delvewheel repair -v --wheel-dir wheelhouse %w
+#     - name: Fix wheel (Windows)
+#       if: matrix.os == 'windows-latest'
+#       run: |
+#         python -m pip install delvewheel
+#         for %w in (wheel\*.whl) do delvewheel repair -v --wheel-dir wheelhouse %w
     - name: Remove temporary wheels and install
       run: |
         rm -rf wheel/build/
@@ -103,9 +102,6 @@ jobs:
         python -m pip install -v *
     - name: Run import tests
       run: |
-        cd ../
-        pwd
-        ls
         python -c "import cached_interpolate"
         python -c "import cached_interpolate.build"
     - uses: actions/upload-artifact@v3
