@@ -125,6 +125,7 @@ jobs:
         name: dist
     - name: Gather artifacts
       run: |
+        ls
         mv wheelhouse/* dist/
         ls dist
         rm dist/*-linux_x86_64.whl
