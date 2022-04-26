@@ -3,12 +3,12 @@
 
 name: Wheels
 
-on: [push]
-  # push:
-  #   branches: [ main ]
-  #   tags: [ v* ]
-  # pull_request:
-  #   branches: [ main ]
+on:
+  push:
+    branches: [ main ]
+    tags: [ v* ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build-linux:
@@ -131,6 +131,7 @@ jobs:
         ls dist
         rm dist/*-linux_x86_64.whl
     - name: Publish test package
+      if: github.event_name == 'push'
       uses: pypa/gh-action-pypi-publish@master
       with:
         user: __token__
