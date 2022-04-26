@@ -7,6 +7,7 @@ __pycache__/
 *.so
 *.c
 cached_interpolate/*.html
+*.version
 
 # Distribution / packaging
 .Python
@@ -111,6 +112,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.idea/
 
 # Spyder project settings
 .spyderproject
