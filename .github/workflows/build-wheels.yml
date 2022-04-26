@@ -21,6 +21,9 @@ jobs:
           python-versions: 'cp38-cp38 cp39-cp39 cp310-cp310'
           build-requirements: 'cython numpy'
           pip-wheel-args: '-v --wheel-dir=wheelhouse --no-deps'
+      - name: Clean up bad wheels
+        run: |
+          rm wheelhouse/*-linux_x86_64.whl
       - uses: actions/upload-artifact@v3
         with:
           name: wheelhouse
