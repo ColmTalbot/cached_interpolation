@@ -1,6 +1,6 @@
+import os
 import subprocess
 import sys
-import os
 
 import numpy as np
 from setuptools import Extension, setup
@@ -121,8 +121,8 @@ setup(
     ext_modules=extensions,
     install_requires=["numpy"],
     license="MIT",
+    long_description_content_type="text/markdown",
     long_description=get_long_description(),
-    long_description_content_type='text/markdown',
     name="cached_interpolate",
     packages=["cached_interpolate"],
     package_data=dict(cached_interpolate=[version_file, "*.pyx"]),

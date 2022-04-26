@@ -63,7 +63,7 @@ plt.show()
 plt.close(figure)
 ```
 
-![comparison](./spline_comparison.png)
+![comparison](https://github.com/ColmTalbot/cached_interpolation/blob/a68c9475c2c07514de08957aafee86ed271b7c89/spline_comparison.png)
 
 I note here that we use the "natural" boundary condition.
 This means that first and second derivatives of the spline vanish at the endpoints.
