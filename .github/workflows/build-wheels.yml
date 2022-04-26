@@ -111,22 +111,23 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: '3.x'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip setuptools
-        python -m pip install numpy cython
+    # - name: Install dependencies
+    #   run: |
+    #     python -m pip install --upgrade pip setuptools
     - name: Download artifact
       uses: actions/download-artifact@v3
       with:
         name: wheelhouse
+        path: dist
     - name: Download artifact
       uses: actions/download-artifact@v3
       with:
         name: dist
+        path: dist
     - name: Gather artifacts
       run: |
         ls
-        mv wheelhouse/* dist/
+        # mv wheelhouse/* dist/
         ls dist
         rm dist/*-linux_x86_64.whl
     - name: Publish test package
