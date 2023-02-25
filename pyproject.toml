@@ -1,0 +1,12 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "setuptools_scm[toml]>=3.4.3",
+    "wheel",
+    "cython",
+    "numpy",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "cached_interpolate/_version.py"
