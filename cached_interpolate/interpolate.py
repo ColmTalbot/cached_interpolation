@@ -271,7 +271,7 @@ class RegularCachingInterpolant:
     ```
     """
 
-    def __init__(self, x, y, kind="cubic", backend=np):
+    def __init__(self, x, y, kind="cubic", backend=np, bc_type="not-a-knot"):
         """
         Initialize the interpolator
 
@@ -286,9 +286,12 @@ class RegularCachingInterpolant:
             Backend for array operations, e.g., `numpy` or `cupy`.
             This enables simple GPU acceleration.
         """
-        from .matrix_forms import natural
-        self.return_float = False
+        from .matrix_forms import MAPPING
+
         self.bk = backend
+        self.n_nodes = len(x)
+        self.conversion = MAPPING[bc_type](self.n_nodes)
+        self.return_float = False
         allowed_kinds = ["nearest", "linear", "cubic"]
         if kind not in allowed_kinds:
             raise ValueError(f"kind must be in {allowed_kinds}")
@@ -297,9 +300,7 @@ class RegularCachingInterpolant:
         self._data = None
         self.kind = kind
         self._cached = False
-        self.n_nodes = len(x)
         self.delta = x[1] - x[0]
-        self.conversion = natural(self.n_nodes)
 
     @property
     def kind(self):
@@ -323,13 +324,21 @@ class RegularCachingInterpolant:
 
         if self.kind == "cubic":
             values = self.conversion @ self.y_array
-            return self.bk.asarray([
-                self.y_array[self.idxs],
-                self.y_array[self.idxs + 1],
-                values[self.idxs],
-                values[self.idxs + 1],
-            ])
+            return self.bk.asarray(
+                [
+                    self.y_array[:-1],
+                    self.y_array[1:],
+                    values[:-1],
+                    values[1:],
+                ]
+            )
         elif self.kind == "linear":
+            return self.bk.asarray(
+                [
+                    self.y_array[: self.n_nodes - 1],
+                    np.diff(self.y_array) / np.diff(self.x_array),
+                ]
+            )
             return self.bk.asarray(
                 build_linear_interpolant(xx=self.x_array, yy=self.y_array)
             )
@@ -355,14 +364,26 @@ class RegularCachingInterpolant:
             self.return_float = True
 
         scaled = (x_values - x_array[0]) / self.delta
-        idxs = np.clip(np.floor(scaled).astype(int), a_min=0, a_max=self.n_points - 2)
+        if self.kind == "nearest":
+            idxs = np.clip(
+                np.round(scaled).astype(int), a_min=0, a_max=self.n_nodes - 1
+            )
+        else:
+            idxs = np.clip(
+                np.floor(scaled).astype(int), a_min=0, a_max=self.n_nodes - 2
+            )
         self._idxs = idxs
-
-        bb = scaled - idxs
-        aa = 1 - bb
-        cc = (aa**3 - aa) / 6
-        dd = (bb**3 - bb) / 6
-        self._diffs = bk.asarray([aa, bb, cc, dd])
+        if self.kind == "cubic":
+            bb = scaled - idxs
+            aa = 1 - bb
+            cc = (aa**3 - aa) / 6
+            dd = (bb**3 - bb) / 6
+            self._diffs = self.bk.asarray([aa, bb, cc, dd])
+        elif self.kind == "linear":
+            self._diffs = self.bk.asarray(
+                [self.bk.ones(x_values.shape), x_values - x_array[idxs]]
+            )
+        self._cached = True
 
     def __call__(self, x, y=None, use_cache=True):
         """
