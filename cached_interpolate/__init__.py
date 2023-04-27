@@ -1,1 +1,1 @@
-from .interpolate import CachingInterpolant
+from .interpolate import CachingInterpolant, RegularCachingInterpolant
