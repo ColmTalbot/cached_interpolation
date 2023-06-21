@@ -1,5 +1,6 @@
 [report]
 show_missing = true
+omit = */_version.py
 
 [run]
 plugins = Cython.Coverage
