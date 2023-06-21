@@ -58,7 +58,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         python -m pip install delvewheel
-        for (%w in wheel\*.whl) do {
+        for (%w in wheel\*.whl) {
           delvewheel repair -v --wheel-dir wheelhouse %w
         }
         ls build
