@@ -62,10 +62,10 @@ jobs:
         ls wheel
         Get-ChildItem -Path wheel | ForEach-Object {
           delvewheel repair -vv --wheel-dir wheelhouse $_
-          Remove-Item $_
         }
+        Move-Item wheel wheelhouse
         ls
-        ls wheel
+        ls wheelhouse
     - name: Remove temporary wheels and install
       run: |
         cd wheelhouse
