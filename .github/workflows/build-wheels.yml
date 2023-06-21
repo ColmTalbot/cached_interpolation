@@ -28,14 +28,13 @@ jobs:
 
   build-other:
     runs-on: windows-latest
-    python-version: "3.9"
     # runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
-      # matrix:
+      matrix:
       #   os: [windows-latest, macos-latest]
-      #   python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
