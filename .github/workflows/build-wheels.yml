@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: RalfG/python-wheels-manylinux-build@v0.4.2
         with:
-          python-versions: 'cp38-cp38 cp39-cp39 cp310-cp310'
+          python-versions: 'cp38-cp38 cp39-cp39 cp310-cp310 cp311-cp311'
           build-requirements: 'cython numpy'
           pip-wheel-args: '-v --wheel-dir=wheelhouse --no-deps'
       - uses: actions/upload-artifact@v3
@@ -27,14 +27,14 @@ jobs:
           path: wheelhouse
 
   build-other:
-    runs-on: macos-latest
-#     runs-on: ${{ matrix.os }}
+    # runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-#         os: [windows-latest, macos-latest]
-        python-version: ["3.8", "3.9", "3.10"]
+        os: [windows-latest, macos-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
@@ -50,15 +50,15 @@ jobs:
       run: |
         python -m pip wheel -v --wheel-dir=wheel --no-deps .
     - name: Fix wheel (Mac OS)
-#       if: matrix.os == 'macos-latest'
+      if: matrix.os == 'macos-latest'
       run: |
         python -m pip install delocate
         delocate-wheel -v -w wheelhouse wheel/cached_interpolate*.whl
-#     - name: Fix wheel (Windows)
-#       if: matrix.os == 'windows-latest'
-#       run: |
-#         python -m pip install delvewheel
-#         for %w in (wheel\*.whl) do delvewheel repair -v --wheel-dir wheelhouse %w
+    - name: Fix wheel (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        python -m pip install delvewheel
+        for %w in (wheel\*.whl) do delvewheel repair -v --wheel-dir wheelhouse %w
     - name: Remove temporary wheels and install
       run: |
         rm -rf wheel/build/
