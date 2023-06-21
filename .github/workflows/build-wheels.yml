@@ -60,7 +60,7 @@ jobs:
       run: |
         python -m pip install delvewheel
         Get-ChildItem -Path wheel | ForEach-Object {
-          delvewheel repair -v $_
+          delvewheel repair -vv --wheel-dir wheelhouse $_
           Remove-Item $_
         }
         ls
