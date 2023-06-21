@@ -70,7 +70,7 @@ jobs:
     - name: Run import tests
       run: |
         cd ../
-        python -c "import cached_interpolate"
+        python -c "import cached_interpolate; print(cached_interpolate.__file__)"
         python -c "import cached_interpolate.build"
     - uses: actions/upload-artifact@v3
       with:
