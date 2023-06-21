@@ -65,7 +65,7 @@ class CachingInterpolant:
     ```
     """
 
-    def __init__(self, x, y, kind="cubic", backend=np):
+    def __init__(self, x, y, kind="cubic", backend=np, bc_type="natural"):
         """
         Initialize the interpolator
 
@@ -80,6 +80,10 @@ class CachingInterpolant:
             Backend for array operations, e.g., `numpy` or `cupy`.
             This enables simple GPU acceleration.
         """
+        if bc_type != "natural":
+            raise NotImplementedError(
+                "Only natural boundary conditions are supported for the generic interpolant"
+            )
         self.return_float = False
         self.bk = backend
         allowed_kinds = ["nearest", "linear", "cubic"]
@@ -290,6 +294,10 @@ class RegularCachingInterpolant:
 
         self.bk = backend
         self.n_nodes = len(x)
+        if bc_type not in MAPPING:
+            raise NotImplementedError(
+                f"bc_type must be one of {list(MAPPING.keys())} not {bc_type}"
+            )
         self.conversion = MAPPING[bc_type](self.n_nodes)
         self.return_float = False
         allowed_kinds = ["nearest", "linear", "cubic"]
