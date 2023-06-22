@@ -94,7 +94,7 @@ jobs:
         python setup.py sdist --verbose
         python -m pip install --debug -vv dist/*
         cd ../
-        python -c "import cached_interpolate; print(cached_interpolate.__file__, cached_interpolate.__version__)))"
+        python -c "import cached_interpolate; print(cached_interpolate.__file__, cached_interpolate.__version__)"
         python -c "import cached_interpolate.build"
         cd -
     - uses: actions/upload-artifact@v3
