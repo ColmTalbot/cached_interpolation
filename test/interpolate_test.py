@@ -8,10 +8,12 @@ from cached_interpolate import CachingInterpolant, RegularCachingInterpolant
 
 interpolants = [RegularCachingInterpolant, CachingInterpolant]
 
+X_BOUNDS = np.sort(np.random.uniform(-10, 10, 2))
+
 
 @pytest.mark.parametrize("bc_type", ["clamped", "natural", "not-a-knot", "periodic"])
 def test_cubic_matches_scipy(bc_type):
-    x_values = np.linspace(0, 1, 10)
+    x_values = np.linspace(*X_BOUNDS, 10)
     y_values = np.random.uniform(-1, 1, 10)
     if bc_type == "periodic":
         y_values[0] = y_values[-1]
@@ -30,7 +32,7 @@ def test_cubic_matches_scipy(bc_type):
 
 @pytest.mark.parametrize("interpolant", interpolants)
 def test_caching_interpolant_bad_bc_type(interpolant):
-    x_values = np.linspace(0, 1, 10)
+    x_values = np.linspace(*X_BOUNDS, 10)
     y_values = np.random.uniform(-1, 1, 10)
     with pytest.raises(NotImplementedError):
         _ = interpolant(x_values, y_values, kind="cubic", bc_type="bad")
@@ -38,7 +40,7 @@ def test_caching_interpolant_bad_bc_type(interpolant):
 
 @pytest.mark.parametrize("interpolant", interpolants)
 def test_nearest_matches_scipy(interpolant):
-    x_values = np.linspace(0, 1, 10)
+    x_values = np.linspace(*X_BOUNDS, 10)
     y_values = np.random.uniform(-1, 1, 10)
     spl = interpolant(x_values, y_values, kind="nearest")
     test_points = np.random.uniform(0, 1, 10000)
@@ -53,7 +55,7 @@ def test_nearest_matches_scipy(interpolant):
 
 @pytest.mark.parametrize("interpolant", interpolants)
 def test_linear_matches_numpy(interpolant):
-    x_values = np.linspace(0, 1, 10)
+    x_values = np.linspace(*X_BOUNDS, 10)
     y_values = np.random.uniform(-1, 1, 10)
     spl = interpolant(x_values, y_values, kind="linear")
     test_points = np.random.uniform(0, 1, 10000)
@@ -68,24 +70,25 @@ def test_linear_matches_numpy(interpolant):
 
 @pytest.mark.parametrize("interpolant", interpolants)
 def test_single_input(interpolant):
-    x_values = np.linspace(0, 1, 10)
+    x_values = np.linspace(*X_BOUNDS, 10)
     y_values = np.random.uniform(-1, 1, 10)
     spl = interpolant(x_values, y_values, kind="cubic")
-    assert spl(0) == y_values[0]
+    assert spl(X_BOUNDS[0]) == y_values[0]
 
 
 @pytest.mark.parametrize("interpolant", interpolants)
 def test_single_complex(interpolant):
-    x_values = np.linspace(0, 1, 10)
+    x_values = np.linspace(*X_BOUNDS, 10)
     y_values = np.random.uniform(-1, 1, 10)
     y_values = y_values + 1j * (1 - y_values)
-    spl = CachingInterpolant(x_values, y_values, kind="cubic")
-    assert spl(0) == y_values[0]
+    spl = interpolant(x_values, y_values, kind="cubic")
+    assert spl(X_BOUNDS[0]) == y_values[0]
 
 
+<<<<<<< HEAD
 @pytest.mark.parametrize("interpolant", interpolants)
 def test_interpolation_at_lower_bound(interpolant):
-    x_values = np.linspace(0, 1, 10)
+    x_values = np.linspace(*X_BOUNDS, 10)
     y_values = np.random.uniform(-1, 1, 10)
     spl = interpolant(x_values, y_values, kind="cubic")
     test_point = 0
@@ -94,7 +97,7 @@ def test_interpolation_at_lower_bound(interpolant):
 
 @pytest.mark.parametrize("interpolant", interpolants)
 def test_interpolation_at_upper_bound(interpolant):
-    x_values = np.linspace(0, 1, 10)
+    x_values = np.linspace(*X_BOUNDS, 10)
     y_values = np.random.uniform(-1, 1, 10)
     spl = interpolant(x_values, y_values, kind="cubic")
     test_point = 1
@@ -111,7 +114,7 @@ def test_bad_interpolation_method_raises_error(interpolant):
 
 @pytest.mark.parametrize("interpolant", interpolants)
 def test_running_without_new_y_values(interpolant):
-    x_values = np.linspace(0, 1, 10)
+    x_values = np.linspace(*X_BOUNDS, 10)
     y_values = np.random.uniform(-1, 1, 10)
     spl = interpolant(x_values, y_values, kind="cubic")
     old_values = spl._data
@@ -121,7 +124,7 @@ def test_running_without_new_y_values(interpolant):
 
 @pytest.mark.parametrize("interpolant", interpolants)
 def test_running_with_complex_input_linear(interpolant):
-    x_values = np.linspace(0, 1, 10)
+    x_values = np.linspace(*X_BOUNDS, 10)
     y_values = np.random.uniform(-1, 1, 10)
     y_values = y_values * np.exp(1j * np.random.uniform(0, 2 * np.pi, 10))
     spl = interpolant(x_values, y_values, kind="linear")
@@ -134,7 +137,7 @@ def test_running_with_complex_input_linear(interpolant):
 
 @pytest.mark.parametrize("interpolant", interpolants)
 def test_running_with_complex_input_cubic(interpolant):
-    x_values = np.linspace(0, 1, 10)
+    x_values = np.linspace(*X_BOUNDS, 10)
     y_values = np.random.uniform(-1, 1, 10)
     y_values = y_values * np.exp(1j * np.random.uniform(0, 2 * np.pi, 10))
     spl = interpolant(x_values, y_values, kind="cubic", bc_type="natural")
