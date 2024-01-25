@@ -85,7 +85,6 @@ def test_single_complex(interpolant):
     assert spl(X_BOUNDS[0]) == y_values[0]
 
 
-<<<<<<< HEAD
 @pytest.mark.parametrize("interpolant", interpolants)
 def test_interpolation_at_lower_bound(interpolant):
     x_values = np.linspace(*X_BOUNDS, 10)
