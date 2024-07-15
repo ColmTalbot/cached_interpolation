@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
       max-parallel: 5
 
     steps:
@@ -42,7 +42,7 @@ jobs:
         python -m pip list
     - name: Test with pytest
       run: |
-        pytest --cov cached_interpolate -ra --color yes --cov-report=xml --junitxml=pytest.xml
+        pytest --pyargs cached_interpolate.test --cov cached_interpolate -ra --color yes --cov-report=xml --junitxml=pytest.xml
     - name: Publish coverage to Codecov
       uses: codecov/codecov-action@v1.2.1
       with:

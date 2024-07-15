@@ -17,7 +17,7 @@ points but different functions being approximated the first of these stages is d
 This can be made more efficient by caching the locations of the evaluation points leaving just the evaluation of the
 interpolation coefficients to be done at each iteration.
 
-A further advantage of this, is that it allows trivially parallising the interpolation using `cupy`.
+A further advantage of this, is that it allows trivially parallising the interpolation using `JAX` or `cupy`.
 
 This package implements this caching for nearest neighbour, linear, and cubic interpolation.
 
