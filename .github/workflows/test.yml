@@ -27,7 +27,7 @@ jobs:
         # setup requirements
         conda install cython numpy
         # testing requirements
-        conda install pytest-cov pre-commit scipy
+        conda install pytest-cov pre-commit scipy jax
         python -m pip install --upgrade pip setuptools
     - name: Install package
       run: |

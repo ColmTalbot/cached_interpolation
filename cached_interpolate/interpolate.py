@@ -115,24 +115,18 @@ class CachingInterpolant:
             Tuple containing the interpolation coefficients
         """
         if self.kind == "cubic":
-            if self.y_array.dtype == complex:
-                real_ = self.bk.vstack(
-                    build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.real)
-                )
-                imag_ = self.bk.vstack(
-                    build_natural_cubic_spline(xx=self.x_array, yy=self.y_array.imag)
-                )
-                return real_ + 1j * imag_
-            else:
-                return self.bk.vstack(
-                    build_natural_cubic_spline(xx=self.x_array, yy=self.y_array)
-                )
+            if self.bk.__name__ == "numpy":
+                builder = build_natural_cubic_spline
+            elif self.bk.__name__ == "jax.numpy":
+                from .build_jax import build_natural_cubic_spline as builder
         elif self.kind == "linear":
-            return self.bk.asarray(
-                build_linear_interpolant(xx=self.x_array, yy=self.y_array)
-            )
+            if self.bk.__name__ == "numpy":
+                builder = build_linear_interpolant
+            elif self.bk.__name__ == "jax.numpy":
+                from .build_jax import build_linear_interpolant as builder
         elif self.kind == "nearest":
             return self.bk.asarray(self.y_array)
+        return self.bk.asarray(builder(xx=self.x_array, yy=self.y_array))
 
     def _construct_cache(self, x_values):
         """
@@ -145,25 +139,24 @@ class CachingInterpolant:
         :param x_values: np.ndarray
             The values that the interpolant will be evaluated at
         """
-        x_array = self.bk.asarray(self.x_array)
-        x_values = self.bk.atleast_1d(x_values)
+        x_array = np.asarray(self.x_array)
+        x_values = np.atleast_1d(x_values)
         if x_values.size == 1:
             self.return_float = True
         input_shape = x_values.shape
         x_values = x_values.reshape(-1)
         self._cached = True
-        self._idxs = self.bk.empty(x_values.shape, dtype=int)
         if self.kind == "nearest":
-            for ii, xval in enumerate(x_values):
-                self._idxs[ii] = self.bk.argmin(abs(xval - x_array))
-            self._idxs = self._idxs.reshape(input_shape)
+            self._idxs = self.bk.asarray(
+                [np.argmin(abs(xval - x_array)) for xval in x_values]
+            ).reshape(input_shape)
         else:
-            for ii, xval in enumerate(x_values):
-                if xval <= x_array[0]:
-                    self._idxs[ii] = 0
-                else:
-                    self._idxs[ii] = self.bk.where(xval > x_array)[0][-1]
-            self._idxs = self._idxs.reshape(input_shape)
+            self._idxs = np.asarray(
+                [
+                    0 if xval <= x_array[0] else np.where(xval > x_array)[0][-1].item()
+                    for xval in x_values
+                ]
+            ).reshape(input_shape)
             x_values = x_values.reshape(input_shape)
             diffs = [self.bk.ones(x_values.shape), x_values - x_array[self._idxs]]
             if self.kind == "cubic":
@@ -173,7 +166,8 @@ class CachingInterpolant:
                 ]
                 self._diffs = self.bk.stack(diffs)
             else:
-                self._diffs = diffs
+                self._diffs = self.bk.asarray(diffs)
+        self._idxs = self.bk.asarray(self._idxs)
 
     def __call__(self, x, y=None, use_cache=True):
         """
@@ -344,11 +338,8 @@ class RegularCachingInterpolant:
             return self.bk.asarray(
                 [
                     self.y_array[: self.n_nodes - 1],
-                    np.diff(self.y_array) / np.diff(self.x_array),
+                    self.bk.diff(self.y_array) / self.bk.diff(self.x_array),
                 ]
-            )
-            return self.bk.asarray(
-                build_linear_interpolant(xx=self.x_array, yy=self.y_array)
             )
         elif self.kind == "nearest":
             return self.bk.asarray(self.y_array)
