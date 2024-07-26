@@ -52,7 +52,7 @@ cpdef build_natural_cubic_spline(double[:] xx, numeric[:] yy):
     for jj in range(n_points - 1, -1, -1):
         c_[jj] = z_[jj] - m_[jj] * _c
         b_[jj] = (
-            (y_[jj + 1] - y_[jj]) / de[jj]
+            (yy[jj + 1] - yy[jj]) / de[jj]
             - de[jj] * (_c + 2 * c_[jj]) / 3
         )
         d_[jj] = (_c - c_[jj]) / 3 / de[jj]
