@@ -1,6 +1,32 @@
+from numbers import Number
+
 import numpy as np
 
 from .build import build_linear_interpolant, build_natural_cubic_spline
+
+
+def to_numpy(array):
+    """
+    Convert an array to a numpy array.
+    Numeric types and pandas objects are returned unchanged.
+
+    Parameters
+    ==========
+    array: array-like
+        The array to convert.
+    """
+    if isinstance(array, (Number, np.ndarray)):
+        return array
+    elif "cupy" in array.__class__.__module__:
+        from cupy import asnumpy
+
+        return asnumpy(array)
+    elif "pandas" in array.__class__.__module__:
+        return array
+    elif "jax" in array.__class__.__module__:
+        return np.asarray(array)
+    else:
+        raise TypeError(f"Cannot convert {type(array)} to numpy array")
 
 
 class CachingInterpolant:
@@ -115,12 +141,12 @@ class CachingInterpolant:
             Tuple containing the interpolation coefficients
         """
         if self.kind == "cubic":
-            if self.bk.__name__ == "numpy":
+            if self.bk.__name__ in ["numpy", "cupy"]:
                 builder = build_natural_cubic_spline
             elif self.bk.__name__ == "jax.numpy":
                 from .build_jax import build_natural_cubic_spline as builder
         elif self.kind == "linear":
-            if self.bk.__name__ == "numpy":
+            if self.bk.__name__ in ["numpy", "cupy"]:
                 builder = build_linear_interpolant
             elif self.bk.__name__ == "jax.numpy":
                 from .build_jax import build_linear_interpolant as builder
@@ -136,18 +162,21 @@ class CachingInterpolant:
         - the indices of the reference x node.
         - the distance from that node along with the required powers of that distance.
 
-        :param x_values: np.ndarray
+        This internally uses numpy arrays and then converts the generated quantities
+        to the appropriate backend at the end.
+
+        :param x_values: ndarray
             The values that the interpolant will be evaluated at
         """
-        x_array = np.asarray(self.x_array)
-        x_values = np.atleast_1d(x_values)
+        x_array = to_numpy(self.x_array)
+        x_values = np.atleast_1d(to_numpy(x_values))
         if x_values.size == 1:
             self.return_float = True
         input_shape = x_values.shape
         x_values = x_values.reshape(-1)
         self._cached = True
         if self.kind == "nearest":
-            self._idxs = self.bk.asarray(
+            self._idxs = np.asarray(
                 [np.argmin(abs(xval - x_array)) for xval in x_values]
             ).reshape(input_shape)
         else:
@@ -158,15 +187,14 @@ class CachingInterpolant:
                 ]
             ).reshape(input_shape)
             x_values = x_values.reshape(input_shape)
-            diffs = [self.bk.ones(x_values.shape), x_values - x_array[self._idxs]]
+            diffs = [np.ones(x_values.shape), x_values - x_array[self._idxs]]
             if self.kind == "cubic":
                 diffs += [
                     (x_values - x_array[self._idxs]) ** 2,
                     (x_values - x_array[self._idxs]) ** 3,
                 ]
-                self._diffs = self.bk.stack(diffs)
-            else:
-                self._diffs = self.bk.asarray(diffs)
+                self._diffs = np.stack(diffs)
+            self._diffs = self.bk.asarray(diffs)
         self._idxs = self.bk.asarray(self._idxs)
 
     def __call__(self, x, y=None, use_cache=True):
@@ -292,13 +320,13 @@ class RegularCachingInterpolant:
             raise NotImplementedError(
                 f"bc_type must be one of {list(MAPPING.keys())} not {bc_type}"
             )
-        self.conversion = MAPPING[bc_type](self.n_nodes)
+        self.conversion = self.bk.asarray(MAPPING[bc_type](self.n_nodes))
         self.return_float = False
         allowed_kinds = ["nearest", "linear", "cubic"]
         if kind not in allowed_kinds:
             raise ValueError(f"kind must be in {allowed_kinds}")
-        self.x_array = x
-        self.y_array = y
+        self.x_array = self.bk.asarray(x)
+        self.y_array = self.bk.asarray(y)
         self._data = None
         self.kind = kind
         self._cached = False
@@ -352,12 +380,14 @@ class RegularCachingInterpolant:
         - the indices of the reference x node.
         - the distance from that node along with the required powers of that distance.
 
+        This internally uses numpy arrays and then converts the generated quantities
+        to the appropriate backend at the end.
+
         :param x_values: np.ndarray
             The values that the interpolant will be evaluated at
         """
-        np = self.bk
-        x_array = np.asarray(self.x_array)
-        x_values = np.atleast_1d(x_values)
+        x_array = to_numpy(self.x_array)
+        x_values = np.atleast_1d(to_numpy(x_values))
 
         if x_values.size == 1:
             self.return_float = True
@@ -371,7 +401,7 @@ class RegularCachingInterpolant:
             idxs = np.clip(
                 np.floor(scaled).astype(int), a_min=0, a_max=self.n_nodes - 2
             )
-        self._idxs = idxs
+        self._idxs = self.bk.asarray(idxs)
         if self.kind == "cubic":
             bb = scaled - idxs
             aa = 1 - bb
@@ -380,7 +410,7 @@ class RegularCachingInterpolant:
             self._diffs = self.bk.asarray([aa, bb, cc, dd])
         elif self.kind == "linear":
             self._diffs = self.bk.asarray(
-                [self.bk.ones(x_values.shape), x_values - x_array[idxs]]
+                [np.ones(x_values.shape), x_values - x_array[idxs]]
             )
         self._cached = True
 
