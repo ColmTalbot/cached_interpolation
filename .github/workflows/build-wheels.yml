@@ -21,7 +21,7 @@ jobs:
           python-versions: 'cp310-cp310 cp311-cp311'
           build-requirements: 'cython numpy setuptools_scm'
           pip-wheel-args: '-v --wheel-dir=wheelhouse --no-deps'
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: wheelhouse
           path: wheelhouse
@@ -71,7 +71,7 @@ jobs:
         cd ../
         python -c "import cached_interpolate; print(cached_interpolate.__file__, cached_interpolate.__version__)"
         python -c "import cached_interpolate.build"
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: wheelhouse
         path: wheelhouse
