@@ -386,31 +386,32 @@ class RegularCachingInterpolant:
         :param x_values: np.ndarray
             The values that the interpolant will be evaluated at
         """
-        x_array = to_numpy(self.x_array)
-        x_values = np.atleast_1d(to_numpy(x_values))
+        xp = self.bk
+        x_array = xp.asarray(self.x_array)
+        x_values = xp.atleast_1d(xp.asarray(x_values))
 
         if x_values.size == 1:
             self.return_float = True
 
         scaled = (x_values - x_array[0]) / self.delta
         if self.kind == "nearest":
-            idxs = np.clip(
-                np.round(scaled).astype(int), a_min=0, a_max=self.n_nodes - 1
+            idxs = xp.clip(
+                xp.round(scaled).astype(int), a_min=0, a_max=self.n_nodes - 1
             )
         else:
-            idxs = np.clip(
-                np.floor(scaled).astype(int), a_min=0, a_max=self.n_nodes - 2
+            idxs = xp.clip(
+                xp.floor(scaled).astype(int), a_min=0, a_max=self.n_nodes - 2
             )
-        self._idxs = self.bk.asarray(idxs)
+        self._idxs = xp.asarray(idxs)
         if self.kind == "cubic":
             bb = scaled - idxs
             aa = 1 - bb
             cc = (aa**3 - aa) / 6
             dd = (bb**3 - bb) / 6
-            self._diffs = self.bk.asarray([aa, bb, cc, dd])
+            self._diffs = xp.asarray([aa, bb, cc, dd])
         elif self.kind == "linear":
-            self._diffs = self.bk.asarray(
-                [np.ones(x_values.shape), x_values - x_array[idxs]]
+            self._diffs = xp.asarray(
+                [xp.ones(x_values.shape), x_values - x_array[idxs]]
             )
         self._cached = True
 
