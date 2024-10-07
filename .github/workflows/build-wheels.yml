@@ -16,14 +16,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: RalfG/python-wheels-manylinux-build@v0.4.2
+      - uses: RalfG/python-wheels-manylinux-build@v0.7.1
         with:
-          python-versions: 'cp310-cp310 cp311-cp311'
+          python-versions: 'cp310-cp310 cp311-cp311 cp312-cp312'
           build-requirements: 'cython numpy setuptools_scm'
           pip-wheel-args: '-v --wheel-dir=wheelhouse --no-deps'
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: wheelhouse
+          name: wheels-linux
           path: wheelhouse
 
   build-other:
@@ -71,9 +71,9 @@ jobs:
         cd ../
         python -c "import cached_interpolate; print(cached_interpolate.__file__, cached_interpolate.__version__)"
         python -c "import cached_interpolate.build"
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: wheelhouse
+        name: wheels-${{ matrix.os }}-${{ matrix.python-version }}
         path: wheelhouse
 
   build-dist:
@@ -97,7 +97,7 @@ jobs:
         python -c "import cached_interpolate; print(cached_interpolate.__file__, cached_interpolate.__version__)"
         python -c "import cached_interpolate.build"
         cd -
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: dist
         path: dist
@@ -114,15 +114,17 @@ jobs:
       with:
         python-version: '3.x'
     - name: Download artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
-        name: wheelhouse
+        pattern: wheels-*
         path: dist
+        merge-multiple: true
     - name: Download artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: dist
         path: dist
+        merge-multiple: true
     - name: Gather artifacts
       run: |
         ls
@@ -130,7 +132,7 @@ jobs:
         rm dist/*-linux_x86_64.whl
 #     - name: Publish test package
 #       if: github.event_name == 'push'
-#       uses: pypa/gh-action-pypi-publish@master
+#       uses: pypa/gh-action-pypi-publish@release/v1
 #       with:
 #         user: __token__
 #         password: ${{ secrets.TRUE_PYPI_API_TOKEN }}
@@ -138,7 +140,7 @@ jobs:
 #         skip_existing: true
     - name: Publish package
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
