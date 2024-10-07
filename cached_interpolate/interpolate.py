@@ -211,6 +211,8 @@ class CachingInterpolant:
             The value of the interpolant at `x`
         """
         if y is not None:
+            if self.bk.__name__ in ["numpy", "cupy"]:
+                y = to_numpy(y)
             self.y_array = y
             self._data = self.build()
         if not (self._cached and use_cache):
