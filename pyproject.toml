@@ -11,6 +11,12 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 write_to = "cached_interpolate/_version.py"
 
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-* cp314-* cp313t-* cp314t-*"
+skip = "*-win32 *-manylinux_i686 *-musllinux*"
+before-build = "pip install cython numpy setuptools_scm"
+enable = ["cpython-freethreading"]
+
 [tool.ruff]
 line-length = 88
 
