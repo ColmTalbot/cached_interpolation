@@ -10,3 +10,13 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 write_to = "cached_interpolate/_version.py"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+extend-ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
