@@ -1,3 +1,4 @@
+# cython: freethreading_compatible = True
 cimport numpy as np  # noqa
 import numpy as np
 

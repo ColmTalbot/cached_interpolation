@@ -56,10 +56,10 @@ def test_running_without_new_y_values():
     def func(xvals, yvals):
         return spl(xvals, yvals, use_cache=False)
 
-    old_values = spl._data
+    _old_values = spl._data
     vals1 = func(x_values, y_values)
     points = jax.numpy.asarray(np.random.uniform(-1, 1, 10))
     vals2 = func(np.array([0, 1]), points)
 
     assert vals1.shape != vals2.shape
-    # assert np.max(old_values - spl._data) > 1e-5
+    # assert np.max(_old_values - spl._data) > 1e-5

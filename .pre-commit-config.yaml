@@ -1,9 +1,10 @@
 repos:
--   repo: https://github.com/ambv/black
-    rev: 22.3.0
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.0
     hooks:
-      - id: black
-        language_version: python3
+    -   id: ruff # linter + import sorting
+        args: [--fix]
+    -   id: ruff-format # formatter (replaces black)
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.2.0
     hooks:
@@ -12,11 +13,6 @@ repos:
     rev: v2.1.0
     hooks:
     -   id: codespell # Spellchecker
--   repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.10.1
-    hooks:
-    -   id: isort # sort imports alphabetically and separates import into sections
-        args: [-w=88, -m=3, --tc, -sp=setup.cfg ]
 -   repo: local
     hooks:
     -   id: flynt
