@@ -128,10 +128,7 @@ class CachingInterpolant:
     @kind.setter
     def kind(self, kind):
         self._kind = kind
-        data = self.build()
-        if data is not None:
-            data = self.bk.asarray(list(data))
-        self._data = data
+        self._data = self.build()
 
     def build(self):
         """
@@ -166,7 +163,10 @@ class CachingInterpolant:
                     builder = jax.jit(builder)
         elif self.kind == "nearest":
             return self.bk.asarray(self.y_array)
-        return self.bk.asarray(builder(xx=self.x_array, yy=self.y_array))
+        result = builder(xx=self.x_array, yy=self.y_array)
+        if not array_api_compat.is_jax_namespace(self.bk):
+            result = np.array(result)
+        return self.bk.asarray(result)
 
     def _construct_cache(self, x_values):
         """
@@ -208,7 +208,7 @@ class CachingInterpolant:
                     (x_values - x_array[self._idxs]) ** 3,
                 ]
                 self._diffs = np.stack(diffs)
-            self._diffs = self.bk.asarray(diffs)
+            self._diffs = self.bk.asarray(np.array(diffs))
         self._idxs = self.bk.asarray(self._idxs)
 
     def __call__(self, x, y=None, use_cache=True):
@@ -225,9 +225,11 @@ class CachingInterpolant:
             The value of the interpolant at `x`
         """
         if y is not None:
-            if array_api_compat.is_numpy_namespace(
-                self.bk
-            ) or array_api_compat.is_cupy_namespace(self.bk):
+            if (
+                array_api_compat.is_numpy_namespace(self.bk)
+                or array_api_compat.is_cupy_namespace(self.bk)
+                or array_api_compat.is_torch_namespace(self.bk)
+            ):
                 y = to_numpy(y)
             self.y_array = y
             self._data = self.build()
@@ -357,10 +359,7 @@ class RegularCachingInterpolant:
     @kind.setter
     def kind(self, kind):
         self._kind = kind
-        data = self.build()
-        if data is not None:
-            data = self.bk.asarray(list(data))
-        self._data = data
+        self._data = self.build()
 
     def build(self):
         """
@@ -369,10 +368,10 @@ class RegularCachingInterpolant:
         :return: tuple
             Tuple containing the interpolation coefficients
         """
-
+        xp = array_api_compat.array_namespace(self.y_array)
         if self.kind == "cubic":
-            values = self.conversion @ self.y_array
-            return self.bk.asarray(
+            values = xp.astype(self.conversion, self.y_array.dtype) @ self.y_array
+            return xp.stack(
                 [
                     self.y_array[:-1],
                     self.y_array[1:],
@@ -381,14 +380,14 @@ class RegularCachingInterpolant:
                 ]
             )
         elif self.kind == "linear":
-            return self.bk.asarray(
+            return xp.stack(
                 [
                     self.y_array[: self.n_nodes - 1],
                     self.bk.diff(self.y_array) / self.bk.diff(self.x_array),
                 ]
             )
         elif self.kind == "nearest":
-            return self.bk.asarray(self.y_array)
+            return xp.asarray(self.y_array)
 
     def _construct_cache(self, x_values):
         """
@@ -404,7 +403,7 @@ class RegularCachingInterpolant:
         :param x_values: np.ndarray
             The values that the interpolant will be evaluated at
         """
-        xp = self.bk
+        xp = array_api_compat.array_namespace(self.x_array)
         x_array = xp.asarray(self.x_array)
         x_values = xpx.atleast_nd(xp.asarray(x_values), ndim=1, xp=xp)
 
@@ -413,20 +412,18 @@ class RegularCachingInterpolant:
 
         scaled = (x_values - x_array[0]) / self.delta
         if self.kind == "nearest":
-            idxs = xp.clip(xp.round(scaled).astype(int), 0, self.n_nodes - 1)
+            idxs = xp.clip(xp.astype(xp.round(scaled), int), 0, self.n_nodes - 1)
         else:
-            idxs = xp.clip(xp.floor(scaled).astype(int), 0, self.n_nodes - 2)
+            idxs = xp.clip(xp.astype(xp.floor(scaled), int), 0, self.n_nodes - 2)
         self._idxs = xp.asarray(idxs)
         if self.kind == "cubic":
             bb = scaled - idxs
             aa = 1 - bb
             cc = (aa**3 - aa) / 6
             dd = (bb**3 - bb) / 6
-            self._diffs = xp.asarray([aa, bb, cc, dd])
+            self._diffs = xp.stack([aa, bb, cc, dd])
         elif self.kind == "linear":
-            self._diffs = xp.asarray(
-                [xp.ones(x_values.shape), x_values - x_array[idxs]]
-            )
+            self._diffs = xp.stack([xp.ones(x_values.shape), x_values - x_array[idxs]])
         self._cached = True
 
     def __call__(self, x, y=None, use_cache=True):

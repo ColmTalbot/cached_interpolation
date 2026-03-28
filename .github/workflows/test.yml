@@ -26,6 +26,7 @@ jobs:
         # testing requirements
         python -m pip install pytest-cov pre-commit scipy
         python -m pip install jax || true
+        python -m pip install torch --index-url https://download.pytorch.org/whl/cpu || true
     - name: Install package
       run: |
         export CYTHON_COVERAGE=1
