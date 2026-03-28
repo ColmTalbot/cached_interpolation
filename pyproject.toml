@@ -20,6 +20,8 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
+    "array-api-compat",
+    "array-api-extra",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.10",

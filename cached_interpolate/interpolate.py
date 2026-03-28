@@ -1,5 +1,7 @@
 from numbers import Number
 
+import array_api_compat
+import array_api_extra as xpx
 import numpy as np
 
 from .build import build_linear_interpolant, build_natural_cubic_spline
@@ -17,16 +19,14 @@ def to_numpy(array):
     """
     if isinstance(array, (Number, np.ndarray)):
         return array
-    elif "cupy" in array.__class__.__module__:
+    elif "pandas" in array.__class__.__module__:
+        return array
+    elif array_api_compat.is_cupy_array(array):
         from cupy import asnumpy
 
         return asnumpy(array)
-    elif "pandas" in array.__class__.__module__:
-        return array
-    elif "jax" in array.__class__.__module__:
-        return np.asarray(array)
     else:
-        raise TypeError(f"Cannot convert {type(array)} to numpy array")
+        return np.asarray(array)
 
 
 class CachingInterpolant:
@@ -141,14 +141,14 @@ class CachingInterpolant:
             Tuple containing the interpolation coefficients
         """
         if self.kind == "cubic":
-            if self.bk.__name__ in ["numpy", "cupy"]:
+            if array_api_compat.is_numpy_namespace(self.bk) or array_api_compat.is_cupy_namespace(self.bk):
                 builder = build_natural_cubic_spline
-            elif self.bk.__name__ == "jax.numpy":
+            elif array_api_compat.is_jax_namespace(self.bk):
                 from .build_jax import build_natural_cubic_spline as builder
         elif self.kind == "linear":
-            if self.bk.__name__ in ["numpy", "cupy"]:
+            if array_api_compat.is_numpy_namespace(self.bk) or array_api_compat.is_cupy_namespace(self.bk):
                 builder = build_linear_interpolant
-            elif self.bk.__name__ == "jax.numpy":
+            elif array_api_compat.is_jax_namespace(self.bk):
                 from .build_jax import build_linear_interpolant as builder
         elif self.kind == "nearest":
             return self.bk.asarray(self.y_array)
@@ -211,7 +211,7 @@ class CachingInterpolant:
             The value of the interpolant at `x`
         """
         if y is not None:
-            if self.bk.__name__ in ["numpy", "cupy"]:
+            if array_api_compat.is_numpy_namespace(self.bk) or array_api_compat.is_cupy_namespace(self.bk):
                 y = to_numpy(y)
             self.y_array = y
             self._data = self.build()
@@ -390,7 +390,7 @@ class RegularCachingInterpolant:
         """
         xp = self.bk
         x_array = xp.asarray(self.x_array)
-        x_values = xp.atleast_1d(xp.asarray(x_values))
+        x_values = xpx.atleast_nd(xp.asarray(x_values), ndim=1, xp=xp)
 
         if x_values.size == 1:
             self.return_float = True
@@ -398,11 +398,11 @@ class RegularCachingInterpolant:
         scaled = (x_values - x_array[0]) / self.delta
         if self.kind == "nearest":
             idxs = xp.clip(
-                xp.round(scaled).astype(int), a_min=0, a_max=self.n_nodes - 1
+                xp.round(scaled).astype(int), 0, self.n_nodes - 1
             )
         else:
             idxs = xp.clip(
-                xp.floor(scaled).astype(int), a_min=0, a_max=self.n_nodes - 2
+                xp.floor(scaled).astype(int), 0, self.n_nodes - 2
             )
         self._idxs = xp.asarray(idxs)
         if self.kind == "cubic":
