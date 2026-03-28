@@ -1,10 +1,26 @@
 from numbers import Number
+import functools
 
 import array_api_compat
 import array_api_extra as xpx
 import numpy as np
 
 from .build import build_linear_interpolant, build_natural_cubic_spline
+
+
+@functools.lru_cache(maxsize=None)
+def _get_array_api_builder(kind, use_jit):
+    from .build_array_api import (
+        build_linear_interpolant as _linear,
+        build_natural_cubic_spline as _cubic,
+    )
+
+    builder = {"linear": _linear, "cubic": _cubic}[kind]
+    if use_jit:
+        import jax
+
+        builder = jax.jit(builder)
+    return builder
 
 
 def to_numpy(array):
@@ -144,12 +160,12 @@ class CachingInterpolant:
             if array_api_compat.is_numpy_namespace(self.bk) or array_api_compat.is_cupy_namespace(self.bk):
                 builder = build_natural_cubic_spline
             else:
-                from .build_array_api import build_natural_cubic_spline as builder
+                builder = _get_array_api_builder("cubic", array_api_compat.is_jax_namespace(self.bk))
         elif self.kind == "linear":
             if array_api_compat.is_numpy_namespace(self.bk) or array_api_compat.is_cupy_namespace(self.bk):
                 builder = build_linear_interpolant
             else:
-                from .build_array_api import build_linear_interpolant as builder
+                builder = _get_array_api_builder("linear", array_api_compat.is_jax_namespace(self.bk))
         elif self.kind == "nearest":
             return self.bk.asarray(self.y_array)
         return self.bk.asarray(builder(xx=self.x_array, yy=self.y_array))

@@ -38,12 +38,3 @@ def build_natural_cubic_spline(xx, yy):
         c_old = cc[jj]
 
     return aa, bb, cc, dd
-
-
-try:
-    import jax
-
-    build_linear_interpolant = jax.jit(build_linear_interpolant)
-    build_natural_cubic_spline = jax.jit(build_natural_cubic_spline)
-except ImportError:
-    pass
