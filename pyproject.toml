@@ -1,12 +1,45 @@
 [build-system]
 requires = [
-    "setuptools>=42",
+    "setuptools>=69",
     "setuptools_scm[toml]>=3.4.3",
     "wheel",
     "cython",
     "numpy>=2",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "cached_interpolate"
+description = "Efficient repeated evaluation of splines at fixed points."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    {name = "Colm Talbot", email = "colm.talbot@ligo.org"},
+]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+]
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/ColmTalbot/cached_interpolation"
+
+[tool.setuptools.packages.find]
+include = ["cached_interpolate*"]
+
+[tool.setuptools.package-data]
+cached_interpolate = ["*.pyx"]
 
 [tool.setuptools_scm]
 write_to = "cached_interpolate/_version.py"
