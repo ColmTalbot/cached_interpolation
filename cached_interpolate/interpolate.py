@@ -42,7 +42,8 @@ class CachingInterpolant:
     This can be made more efficient by caching the locations of the evaluation points leaving just the evaluation of the
     interpolation coefficients to be done at each iteration.
 
-    A further advantage of this, is that it allows broadcasting the interpolation using `cupy`.
+    A further advantage of this is that it allows parallelising the interpolation
+    using array backends such as `cupy`, `jax`, or `torch`.
 
     This package implements this caching for nearest neighbour, linear, and cubic interpolation.
 
@@ -69,7 +70,7 @@ class CachingInterpolant:
 
     If we need to evaluate for a new set of points, we have to tell the interpolant to reset the cache.
     There are two ways to do this:
-    - create a new interpolant, this will require reevaluating the interplation coefficients.
+    - create a new interpolant, this will require reevaluating the interpolation coefficients.
     - disable the evaluation point caching.
 
     ```python
@@ -77,16 +78,15 @@ class CachingInterpolant:
     interpolant(x=new_evaluation_points, use_cache=False)
     ```
 
-    If you have access to an `nvidia` GPU and are evaluating the spline at ~ O(10^5) or more points you may want
-    to switch to the `cupy` backend.
-    This uses `cupy` just for the evaluation stage, not for computing the interpolation coefficients.
+    Any array-API-compatible backend can be used for the evaluation stage.
+    For example, to use `torch`:
 
     ```python
-    import cupy as cp
+    import torch
 
-    evaluation_points = cp.asarray(evaluation_points)
+    evaluation_points = torch.tensor(evaluation_points)
 
-    interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, backend=cp)
+    interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, backend=torch)
     interpolated_values = interpolant(evaluation_points)
     ```
     """
@@ -103,8 +103,12 @@ class CachingInterpolant:
             The interpolation type, should be in ["nearest", "linear", "cubic"],
             default="cubic"
         :param backend: module
-            Backend for array operations, e.g., `numpy` or `cupy`.
-            This enables simple GPU acceleration.
+            Backend for array operations, e.g., `numpy`, `cupy`, `jax.numpy`, or
+            `torch`.  Any array-API-compatible namespace is accepted.
+        :param bc_type: str
+            Boundary condition type for cubic splines. Only "natural" is supported
+            for this class; use `RegularCachingInterpolant` for other boundary
+            conditions.
         """
         if bc_type != "natural":
             raise NotImplementedError(
@@ -268,20 +272,21 @@ class RegularCachingInterpolant:
     This can be made more efficient by caching the locations of the evaluation points leaving just the evaluation of the
     interpolation coefficients to be done at each iteration.
 
-    A further advantage of this, is that it allows broadcasting the interpolation using `cupy`.
+    A further advantage of this is that it allows parallelising the interpolation
+    using array backends such as `cupy`, `jax`, or `torch`.
 
     This package implements this caching for nearest neighbour, linear, and cubic interpolation.
 
     ```python
     import numpy as np
 
-    from cached_interpolate import CachingInterpolant
+    from cached_interpolate import RegularCachingInterpolant
 
     x_nodes = np.linspace(0, 1, 10)
     y_nodes = np.random.uniform(-1, 1, 10)
     evaluation_points = np.random.uniform(0, 1, 10000)
 
-    interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, kind="cubic")
+    interpolant = RegularCachingInterpolant(x=x_nodes, y=y_nodes, kind="cubic")
     interpolated_values = interpolant(evaluation_points)
     ```
 
@@ -295,7 +300,7 @@ class RegularCachingInterpolant:
 
     If we need to evaluate for a new set of points, we have to tell the interpolant to reset the cache.
     There are two ways to do this:
-    - create a new interpolant, this will require reevaluating the interplation coefficients.
+    - create a new interpolant, this will require reevaluating the interpolation coefficients.
     - disable the evaluation point caching.
 
     ```python
@@ -303,16 +308,15 @@ class RegularCachingInterpolant:
     interpolant(x=new_evaluation_points, use_cache=False)
     ```
 
-    If you have access to an `nvidia` GPU and are evaluating the spline at ~ O(10^5) or more points you may want
-    to switch to the `cupy` backend.
-    This uses `cupy` just for the evaluation stage, not for computing the interpolation coefficients.
+    Any array-API-compatible backend can be used for the evaluation stage.
+    For example, to use `torch`:
 
     ```python
-    import cupy as cp
+    import torch
 
-    evaluation_points = cp.asarray(evaluation_points)
+    evaluation_points = torch.tensor(evaluation_points)
 
-    interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, backend=cp)
+    interpolant = RegularCachingInterpolant(x=x_nodes, y=y_nodes, backend=torch)
     interpolated_values = interpolant(evaluation_points)
     ```
     """
@@ -322,15 +326,18 @@ class RegularCachingInterpolant:
         Initialize the interpolator
 
         :param x: np.ndarray
-            The nodes of the interpolant
+            The nodes of the interpolant (must be regularly spaced)
         :param y: np.ndarray
             The value of the function being interpolated at the nodes
         :param kind: str
             The interpolation type, should be in ["nearest", "linear", "cubic"],
             default="cubic"
         :param backend: module
-            Backend for array operations, e.g., `numpy` or `cupy`.
-            This enables simple GPU acceleration.
+            Backend for array operations, e.g., `numpy`, `cupy`, `jax.numpy`, or
+            `torch`.  Any array-API-compatible namespace is accepted.
+        :param bc_type: str
+            Boundary condition type for cubic splines. Supported values are
+            "clamped", "natural", "not-a-knot" (default), and "periodic".
         """
         from .matrix_forms import MAPPING
 

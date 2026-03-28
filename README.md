@@ -17,13 +17,17 @@ points but different functions being approximated the first of these stages is d
 This can be made more efficient by caching the locations of the evaluation points leaving just the evaluation of the
 interpolation coefficients to be done at each iteration.
 
-A further advantage of this, is that it allows trivially parallising the interpolation using `JAX` or `cupy`.
+A further advantage of this, is that it allows trivially parallelising the interpolation using `JAX`, `cupy`, or `torch`.
 
 This package implements this caching for nearest neighbour, linear, and cubic interpolation.
 
 ### Installation
 
-Currently this is only installable by downloading the source and installing locally.
+```console
+$ pip install cached_interpolate
+```
+
+Or to install from source:
 
 ```console
 $ git clone git@github.com:ColmTalbot/cached_interpolation.git
@@ -120,12 +124,12 @@ If this is the dominant cost in a simulation that takes a week to run, this is a
 
 If we need to evaluate for a new set of points, we have to tell the interpolant to reset the cache.
 There are two ways to do this:
-- create a new interpolant, this will require reevaluating the interplation coefficients.
+- create a new interpolant, this will require reevaluating the interpolation coefficients.
 - disable the evaluation point caching.
 
 ```python
 import numpy as np
-from scipy.interpolant import CubicSpline
+from scipy.interpolate import CubicSpline
 
 from cached_interpolate import CachingInterpolant
 
@@ -142,9 +146,9 @@ interpolant(x=new_evaluation_points, use_cache=False)
 
 Using the code in this way is much slower than `scipy` and so not practically very useful.
 
-If you have access to an `Nvidia` GPU and are evaluating the spline at ~ O(10^5) or more points you may want to switch
-to the `cupy` backend.
-This uses `cupy` just for the evaluation stage, not for computing the interpolation coefficients.
+Any array-API-compatible module can be used as the `backend` parameter, enabling
+evaluation on GPUs or via JIT compilation.
+For example, to use `cupy` on an Nvidia GPU or `torch`:
 
 ```python
 import cupy as cp
@@ -158,6 +162,20 @@ evaluation_points = np.random.uniform(0, 1, 10000)
 evaluation_points = cp.asarray(evaluation_points)
 
 interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, backend=cp)
+interpolated_values = interpolant(evaluation_points)
+```
+
+```python
+import torch
+import numpy as np
+
+from cached_interpolate import CachingInterpolant
+
+x_nodes = np.linspace(0, 1, 10)
+y_nodes = np.random.uniform(-1, 1, 10)
+evaluation_points = torch.tensor(np.random.uniform(0, 1, 10000))
+
+interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, backend=torch)
 interpolated_values = interpolant(evaluation_points)
 ```
 
@@ -220,6 +238,32 @@ GPU cached time = 0.212s for 1000 iterations.
 While there are likely more optimizations that can be made and improved
 flexibility in the implementation, we can see that the GPU version is well
 over an order of magnitude faster than either of the CPU versions.
+
+### RegularCachingInterpolant
+
+For the common case where the knot points are **regularly spaced**, the
+`RegularCachingInterpolant` class is available.
+It uses an analytical formula to find the nearest knot rather than a binary
+search, making it faster and fully differentiable through JIT-compiled backends
+such as `jax` or `torch`.
+It also supports a wider set of boundary conditions for cubic splines:
+`"clamped"`, `"natural"`, `"not-a-knot"` (default), and `"periodic"`.
+
+```python
+import numpy as np
+
+from cached_interpolate import RegularCachingInterpolant
+
+x_nodes = np.linspace(0, 1, 10)
+y_nodes = np.random.uniform(-1, 1, 10)
+evaluation_points = np.random.uniform(0, 1, 10000)
+
+interpolant = RegularCachingInterpolant(x=x_nodes, y=y_nodes, kind="cubic")
+interpolated_values = interpolant(evaluation_points)
+```
+
+The same `backend` parameter and loop-with-caching pattern described above
+apply equally to `RegularCachingInterpolant`.
 
 If you have any comments/questions feel free to contact me through the issue
 tracker or a pull request.
