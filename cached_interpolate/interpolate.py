@@ -143,13 +143,13 @@ class CachingInterpolant:
         if self.kind == "cubic":
             if array_api_compat.is_numpy_namespace(self.bk) or array_api_compat.is_cupy_namespace(self.bk):
                 builder = build_natural_cubic_spline
-            elif array_api_compat.is_jax_namespace(self.bk):
-                from .build_jax import build_natural_cubic_spline as builder
+            else:
+                from .build_array_api import build_natural_cubic_spline as builder
         elif self.kind == "linear":
             if array_api_compat.is_numpy_namespace(self.bk) or array_api_compat.is_cupy_namespace(self.bk):
                 builder = build_linear_interpolant
-            elif array_api_compat.is_jax_namespace(self.bk):
-                from .build_jax import build_linear_interpolant as builder
+            else:
+                from .build_array_api import build_linear_interpolant as builder
         elif self.kind == "nearest":
             return self.bk.asarray(self.y_array)
         return self.bk.asarray(builder(xx=self.x_array, yy=self.y_array))
