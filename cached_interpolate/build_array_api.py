@@ -22,7 +22,9 @@ def build_natural_cubic_spline(xx, yy):
     for ii in range(1, n_points):
         ll = 2 * (xx[ii + 1] - xx[ii - 1]) - delta[ii - 1] * mu[ii - 1]
         mu = xpx.at(mu, ii).set(delta[ii] / ll, xp=xp)
-        zz = xpx.at(zz, ii).set((alpha[ii - 1] - delta[ii - 1] * zz[ii - 1]) / ll, xp=xp)
+        zz = xpx.at(zz, ii).set(
+            (alpha[ii - 1] - delta[ii - 1] * zz[ii - 1]) / ll, xp=xp
+        )
 
     bb = xp.zeros_like(aa)
     cc = xp.zeros_like(aa)

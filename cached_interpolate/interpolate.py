@@ -1,26 +1,10 @@
 from numbers import Number
-import functools
 
 import array_api_compat
 import array_api_extra as xpx
 import numpy as np
 
 from .build import build_linear_interpolant, build_natural_cubic_spline
-
-
-@functools.lru_cache(maxsize=None)
-def _get_array_api_builder(kind, use_jit):
-    from .build_array_api import (
-        build_linear_interpolant as _linear,
-        build_natural_cubic_spline as _cubic,
-    )
-
-    builder = {"linear": _linear, "cubic": _cubic}[kind]
-    if use_jit:
-        import jax
-
-        builder = jax.jit(builder)
-    return builder
 
 
 def to_numpy(array):
@@ -157,15 +141,29 @@ class CachingInterpolant:
             Tuple containing the interpolation coefficients
         """
         if self.kind == "cubic":
-            if array_api_compat.is_numpy_namespace(self.bk) or array_api_compat.is_cupy_namespace(self.bk):
+            if array_api_compat.is_numpy_namespace(
+                self.bk
+            ) or array_api_compat.is_cupy_namespace(self.bk):
                 builder = build_natural_cubic_spline
             else:
-                builder = _get_array_api_builder("cubic", array_api_compat.is_jax_namespace(self.bk))
+                from .build_array_api import build_natural_cubic_spline as builder
+
+                if array_api_compat.is_jax_namespace(self.bk):
+                    import jax
+
+                    builder = jax.jit(builder)
         elif self.kind == "linear":
-            if array_api_compat.is_numpy_namespace(self.bk) or array_api_compat.is_cupy_namespace(self.bk):
+            if array_api_compat.is_numpy_namespace(
+                self.bk
+            ) or array_api_compat.is_cupy_namespace(self.bk):
                 builder = build_linear_interpolant
             else:
-                builder = _get_array_api_builder("linear", array_api_compat.is_jax_namespace(self.bk))
+                from .build_array_api import build_linear_interpolant as builder
+
+                if array_api_compat.is_jax_namespace(self.bk):
+                    import jax
+
+                    builder = jax.jit(builder)
         elif self.kind == "nearest":
             return self.bk.asarray(self.y_array)
         return self.bk.asarray(builder(xx=self.x_array, yy=self.y_array))
@@ -227,7 +225,9 @@ class CachingInterpolant:
             The value of the interpolant at `x`
         """
         if y is not None:
-            if array_api_compat.is_numpy_namespace(self.bk) or array_api_compat.is_cupy_namespace(self.bk):
+            if array_api_compat.is_numpy_namespace(
+                self.bk
+            ) or array_api_compat.is_cupy_namespace(self.bk):
                 y = to_numpy(y)
             self.y_array = y
             self._data = self.build()
@@ -413,13 +413,9 @@ class RegularCachingInterpolant:
 
         scaled = (x_values - x_array[0]) / self.delta
         if self.kind == "nearest":
-            idxs = xp.clip(
-                xp.round(scaled).astype(int), 0, self.n_nodes - 1
-            )
+            idxs = xp.clip(xp.round(scaled).astype(int), 0, self.n_nodes - 1)
         else:
-            idxs = xp.clip(
-                xp.floor(scaled).astype(int), 0, self.n_nodes - 2
-            )
+            idxs = xp.clip(xp.floor(scaled).astype(int), 0, self.n_nodes - 2)
         self._idxs = xp.asarray(idxs)
         if self.kind == "cubic":
             bb = scaled - idxs
