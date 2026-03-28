@@ -114,7 +114,7 @@ def test_running_without_new_y_values(interpolant, backend):
     old_values = spl._data
     points = backend.asarray(np.random.uniform(-1, 1, 10))
     _ = spl(np.array([0, 1]), y=points, use_cache=False)
-    assert np.max(old_values - spl._data) > 1e-5
+    assert np.max(to_numpy(old_values - spl._data)) > 1e-5
 
 
 def test_running_with_complex_input_linear(interpolant, backend):

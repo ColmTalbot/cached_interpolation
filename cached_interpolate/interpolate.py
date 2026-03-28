@@ -1,5 +1,7 @@
 from numbers import Number
 
+import array_api_compat
+import array_api_extra as xpx
 import numpy as np
 
 from .build import build_linear_interpolant, build_natural_cubic_spline
@@ -17,16 +19,14 @@ def to_numpy(array):
     """
     if isinstance(array, (Number, np.ndarray)):
         return array
-    elif "cupy" in array.__class__.__module__:
+    elif "pandas" in array.__class__.__module__:
+        return array
+    elif array_api_compat.is_cupy_array(array):
         from cupy import asnumpy
 
         return asnumpy(array)
-    elif "pandas" in array.__class__.__module__:
-        return array
-    elif "jax" in array.__class__.__module__:
-        return np.asarray(array)
     else:
-        raise TypeError(f"Cannot convert {type(array)} to numpy array")
+        return np.asarray(array)
 
 
 class CachingInterpolant:
@@ -42,7 +42,8 @@ class CachingInterpolant:
     This can be made more efficient by caching the locations of the evaluation points leaving just the evaluation of the
     interpolation coefficients to be done at each iteration.
 
-    A further advantage of this, is that it allows broadcasting the interpolation using `cupy`.
+    A further advantage of this is that it allows parallelising the interpolation
+    using array backends such as `cupy`, `jax`, or `torch`.
 
     This package implements this caching for nearest neighbour, linear, and cubic interpolation.
 
@@ -69,7 +70,7 @@ class CachingInterpolant:
 
     If we need to evaluate for a new set of points, we have to tell the interpolant to reset the cache.
     There are two ways to do this:
-    - create a new interpolant, this will require reevaluating the interplation coefficients.
+    - create a new interpolant, this will require reevaluating the interpolation coefficients.
     - disable the evaluation point caching.
 
     ```python
@@ -77,16 +78,15 @@ class CachingInterpolant:
     interpolant(x=new_evaluation_points, use_cache=False)
     ```
 
-    If you have access to an `nvidia` GPU and are evaluating the spline at ~ O(10^5) or more points you may want
-    to switch to the `cupy` backend.
-    This uses `cupy` just for the evaluation stage, not for computing the interpolation coefficients.
+    Any array-API-compatible backend can be used for the evaluation stage.
+    For example, to use `torch`:
 
     ```python
-    import cupy as cp
+    import torch
 
-    evaluation_points = cp.asarray(evaluation_points)
+    evaluation_points = torch.tensor(evaluation_points)
 
-    interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, backend=cp)
+    interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, backend=torch)
     interpolated_values = interpolant(evaluation_points)
     ```
     """
@@ -103,8 +103,12 @@ class CachingInterpolant:
             The interpolation type, should be in ["nearest", "linear", "cubic"],
             default="cubic"
         :param backend: module
-            Backend for array operations, e.g., `numpy` or `cupy`.
-            This enables simple GPU acceleration.
+            Backend for array operations, e.g., `numpy`, `cupy`, `jax.numpy`, or
+            `torch`.  Any array-API-compatible namespace is accepted.
+        :param bc_type: str
+            Boundary condition type for cubic splines. Only "natural" is supported
+            for this class; use `RegularCachingInterpolant` for other boundary
+            conditions.
         """
         if bc_type != "natural":
             raise NotImplementedError(
@@ -128,10 +132,7 @@ class CachingInterpolant:
     @kind.setter
     def kind(self, kind):
         self._kind = kind
-        data = self.build()
-        if data is not None:
-            data = self.bk.asarray(list(data))
-        self._data = data
+        self._data = self.build()
 
     def build(self):
         """
@@ -141,18 +142,35 @@ class CachingInterpolant:
             Tuple containing the interpolation coefficients
         """
         if self.kind == "cubic":
-            if self.bk.__name__ in ["numpy", "cupy"]:
+            if array_api_compat.is_numpy_namespace(
+                self.bk
+            ) or array_api_compat.is_cupy_namespace(self.bk):
                 builder = build_natural_cubic_spline
-            elif self.bk.__name__ == "jax.numpy":
-                from .build_jax import build_natural_cubic_spline as builder
+            else:
+                from .build_array_api import build_natural_cubic_spline as builder
+
+                if array_api_compat.is_jax_namespace(self.bk):
+                    import jax
+
+                    builder = jax.jit(builder)
         elif self.kind == "linear":
-            if self.bk.__name__ in ["numpy", "cupy"]:
+            if array_api_compat.is_numpy_namespace(
+                self.bk
+            ) or array_api_compat.is_cupy_namespace(self.bk):
                 builder = build_linear_interpolant
-            elif self.bk.__name__ == "jax.numpy":
-                from .build_jax import build_linear_interpolant as builder
+            else:
+                from .build_array_api import build_linear_interpolant as builder
+
+                if array_api_compat.is_jax_namespace(self.bk):
+                    import jax
+
+                    builder = jax.jit(builder)
         elif self.kind == "nearest":
             return self.bk.asarray(self.y_array)
-        return self.bk.asarray(builder(xx=self.x_array, yy=self.y_array))
+        result = builder(xx=self.x_array, yy=self.y_array)
+        if not array_api_compat.is_jax_namespace(self.bk):
+            result = np.array(result)
+        return self.bk.asarray(result)
 
     def _construct_cache(self, x_values):
         """
@@ -194,7 +212,7 @@ class CachingInterpolant:
                     (x_values - x_array[self._idxs]) ** 3,
                 ]
                 self._diffs = np.stack(diffs)
-            self._diffs = self.bk.asarray(diffs)
+            self._diffs = self.bk.asarray(np.array(diffs))
         self._idxs = self.bk.asarray(self._idxs)
 
     def __call__(self, x, y=None, use_cache=True):
@@ -211,7 +229,11 @@ class CachingInterpolant:
             The value of the interpolant at `x`
         """
         if y is not None:
-            if self.bk.__name__ in ["numpy", "cupy"]:
+            if (
+                array_api_compat.is_numpy_namespace(self.bk)
+                or array_api_compat.is_cupy_namespace(self.bk)
+                or array_api_compat.is_torch_namespace(self.bk)
+            ):
                 y = to_numpy(y)
             self.y_array = y
             self._data = self.build()
@@ -250,20 +272,21 @@ class RegularCachingInterpolant:
     This can be made more efficient by caching the locations of the evaluation points leaving just the evaluation of the
     interpolation coefficients to be done at each iteration.
 
-    A further advantage of this, is that it allows broadcasting the interpolation using `cupy`.
+    A further advantage of this is that it allows parallelising the interpolation
+    using array backends such as `cupy`, `jax`, or `torch`.
 
     This package implements this caching for nearest neighbour, linear, and cubic interpolation.
 
     ```python
     import numpy as np
 
-    from cached_interpolate import CachingInterpolant
+    from cached_interpolate import RegularCachingInterpolant
 
     x_nodes = np.linspace(0, 1, 10)
     y_nodes = np.random.uniform(-1, 1, 10)
     evaluation_points = np.random.uniform(0, 1, 10000)
 
-    interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, kind="cubic")
+    interpolant = RegularCachingInterpolant(x=x_nodes, y=y_nodes, kind="cubic")
     interpolated_values = interpolant(evaluation_points)
     ```
 
@@ -277,7 +300,7 @@ class RegularCachingInterpolant:
 
     If we need to evaluate for a new set of points, we have to tell the interpolant to reset the cache.
     There are two ways to do this:
-    - create a new interpolant, this will require reevaluating the interplation coefficients.
+    - create a new interpolant, this will require reevaluating the interpolation coefficients.
     - disable the evaluation point caching.
 
     ```python
@@ -285,16 +308,15 @@ class RegularCachingInterpolant:
     interpolant(x=new_evaluation_points, use_cache=False)
     ```
 
-    If you have access to an `nvidia` GPU and are evaluating the spline at ~ O(10^5) or more points you may want
-    to switch to the `cupy` backend.
-    This uses `cupy` just for the evaluation stage, not for computing the interpolation coefficients.
+    Any array-API-compatible backend can be used for the evaluation stage.
+    For example, to use `torch`:
 
     ```python
-    import cupy as cp
+    import torch
 
-    evaluation_points = cp.asarray(evaluation_points)
+    evaluation_points = torch.tensor(evaluation_points)
 
-    interpolant = CachingInterpolant(x=x_nodes, y=y_nodes, backend=cp)
+    interpolant = RegularCachingInterpolant(x=x_nodes, y=y_nodes, backend=torch)
     interpolated_values = interpolant(evaluation_points)
     ```
     """
@@ -304,15 +326,18 @@ class RegularCachingInterpolant:
         Initialize the interpolator
 
         :param x: np.ndarray
-            The nodes of the interpolant
+            The nodes of the interpolant (must be regularly spaced)
         :param y: np.ndarray
             The value of the function being interpolated at the nodes
         :param kind: str
             The interpolation type, should be in ["nearest", "linear", "cubic"],
             default="cubic"
         :param backend: module
-            Backend for array operations, e.g., `numpy` or `cupy`.
-            This enables simple GPU acceleration.
+            Backend for array operations, e.g., `numpy`, `cupy`, `jax.numpy`, or
+            `torch`.  Any array-API-compatible namespace is accepted.
+        :param bc_type: str
+            Boundary condition type for cubic splines. Supported values are
+            "clamped", "natural", "not-a-knot" (default), and "periodic".
         """
         from .matrix_forms import MAPPING
 
@@ -341,10 +366,7 @@ class RegularCachingInterpolant:
     @kind.setter
     def kind(self, kind):
         self._kind = kind
-        data = self.build()
-        if data is not None:
-            data = self.bk.asarray(list(data))
-        self._data = data
+        self._data = self.build()
 
     def build(self):
         """
@@ -353,10 +375,10 @@ class RegularCachingInterpolant:
         :return: tuple
             Tuple containing the interpolation coefficients
         """
-
+        xp = array_api_compat.array_namespace(self.y_array)
         if self.kind == "cubic":
-            values = self.conversion @ self.y_array
-            return self.bk.asarray(
+            values = xp.astype(self.conversion, self.y_array.dtype) @ self.y_array
+            return xp.stack(
                 [
                     self.y_array[:-1],
                     self.y_array[1:],
@@ -365,14 +387,14 @@ class RegularCachingInterpolant:
                 ]
             )
         elif self.kind == "linear":
-            return self.bk.asarray(
+            return xp.stack(
                 [
                     self.y_array[: self.n_nodes - 1],
                     self.bk.diff(self.y_array) / self.bk.diff(self.x_array),
                 ]
             )
         elif self.kind == "nearest":
-            return self.bk.asarray(self.y_array)
+            return xp.asarray(self.y_array)
 
     def _construct_cache(self, x_values):
         """
@@ -388,33 +410,27 @@ class RegularCachingInterpolant:
         :param x_values: np.ndarray
             The values that the interpolant will be evaluated at
         """
-        xp = self.bk
+        xp = array_api_compat.array_namespace(self.x_array)
         x_array = xp.asarray(self.x_array)
-        x_values = xp.atleast_1d(xp.asarray(x_values))
+        x_values = xpx.atleast_nd(xp.asarray(x_values), ndim=1, xp=xp)
 
         if x_values.size == 1:
             self.return_float = True
 
         scaled = (x_values - x_array[0]) / self.delta
         if self.kind == "nearest":
-            idxs = xp.clip(
-                xp.round(scaled).astype(int), a_min=0, a_max=self.n_nodes - 1
-            )
+            idxs = xp.clip(xp.astype(xp.round(scaled), int), 0, self.n_nodes - 1)
         else:
-            idxs = xp.clip(
-                xp.floor(scaled).astype(int), a_min=0, a_max=self.n_nodes - 2
-            )
+            idxs = xp.clip(xp.astype(xp.floor(scaled), int), 0, self.n_nodes - 2)
         self._idxs = xp.asarray(idxs)
         if self.kind == "cubic":
             bb = scaled - idxs
             aa = 1 - bb
             cc = (aa**3 - aa) / 6
             dd = (bb**3 - bb) / 6
-            self._diffs = xp.asarray([aa, bb, cc, dd])
+            self._diffs = xp.stack([aa, bb, cc, dd])
         elif self.kind == "linear":
-            self._diffs = xp.asarray(
-                [xp.ones(x_values.shape), x_values - x_array[idxs]]
-            )
+            self._diffs = xp.stack([xp.ones(x_values.shape), x_values - x_array[idxs]])
         self._cached = True
 
     def __call__(self, x, y=None, use_cache=True):
